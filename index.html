@@ -1,0 +1,2063 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Flowline Task Board</title>
+  <style>
+    :root {
+      --paper: #f5f5f2;
+      --paper-strong: #fbfbf9;
+      --ink: #555954;
+      --muted: #a4a9a4;
+      --line: rgba(75, 80, 74, 0.10);
+      --card-border: rgba(70, 76, 70, 0.13);
+      --shadow: 0 8px 22px rgba(45, 50, 46, 0.07), 0 1px 2px rgba(45, 50, 46, 0.08);
+      --blue: #75c9ff;
+      --blue-strong: #49b8fa;
+      --radius: 18px;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html,
+    body {
+      min-height: 100%;
+      margin: 0;
+    }
+
+    body {
+      color: var(--ink);
+      background:
+        radial-gradient(circle at 14% 8%, rgba(255, 255, 255, 0.92), transparent 28rem),
+        linear-gradient(135deg, #eeeeea, #fafaf8 48%, #efefeb);
+      font-family: Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      letter-spacing: -0.01em;
+    }
+
+    button,
+    input,
+    textarea {
+      font: inherit;
+    }
+
+    button {
+      color: inherit;
+    }
+
+    .app {
+      width: min(1480px, calc(100% - 28px));
+      margin: 14px auto;
+    }
+
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      margin-bottom: 10px;
+      padding: 4px 6px;
+    }
+
+    .brand {
+      display: flex;
+      align-items: baseline;
+      gap: 10px;
+      color: #434743;
+      font-size: 15px;
+      font-weight: 700;
+    }
+
+    .brand span {
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 500;
+    }
+
+    .toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 8px;
+    }
+
+    .button {
+      min-height: 36px;
+      padding: 0 13px;
+      border: 1px solid rgba(68, 74, 68, 0.12);
+      border-radius: 11px;
+      background: rgba(255, 255, 255, 0.78);
+      box-shadow: 0 1px 2px rgba(50, 54, 50, 0.05);
+      cursor: pointer;
+      transition: transform 140ms ease, border-color 140ms ease, background 140ms ease;
+    }
+
+    .button:hover {
+      border-color: rgba(73, 184, 250, 0.42);
+      background: white;
+      transform: translateY(-1px);
+    }
+
+    .button.primary {
+      border-color: rgba(73, 184, 250, 0.45);
+      background: #edf8ff;
+      color: #328fc6;
+      font-weight: 650;
+    }
+
+    .button.quiet {
+      color: #8c918c;
+    }
+
+    .button.danger {
+      color: #b86868;
+    }
+
+    .board-library {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 3px;
+      border: 1px solid rgba(68, 74, 68, 0.10);
+      border-radius: 12px;
+      background: rgba(255, 255, 255, 0.52);
+    }
+
+    .board-select {
+      width: min(210px, 24vw);
+      min-width: 130px;
+      min-height: 30px;
+      padding: 0 30px 0 10px;
+      overflow: hidden;
+      border: 0;
+      border-radius: 8px;
+      outline: none;
+      background: rgba(255, 255, 255, 0.72);
+      color: #626762;
+      cursor: pointer;
+      font-size: 12px;
+      font-weight: 600;
+      text-overflow: ellipsis;
+    }
+
+    .board-select:focus {
+      box-shadow: 0 0 0 3px rgba(73, 184, 250, 0.11);
+    }
+
+    .library-button {
+      display: grid;
+      width: 30px;
+      height: 30px;
+      place-items: center;
+      padding: 0;
+      border: 1px solid transparent;
+      border-radius: 8px;
+      background: transparent;
+      color: #969b96;
+      cursor: pointer;
+      transition: border-color 130ms ease, background 130ms ease, color 130ms ease;
+    }
+
+    .library-button:hover {
+      border-color: rgba(73, 184, 250, 0.30);
+      background: #f1faff;
+      color: #3ea8e3;
+    }
+
+    .library-button.delete:hover {
+      border-color: rgba(190, 100, 100, 0.24);
+      background: #fff5f5;
+      color: #bc6868;
+    }
+
+    .board-shell {
+      position: relative;
+      min-height: 610px;
+      overflow: auto;
+      border: 1px solid rgba(70, 76, 70, 0.12);
+      border-radius: var(--radius);
+      background:
+        linear-gradient(rgba(255, 255, 255, 0.48), rgba(255, 255, 255, 0.48)),
+        radial-gradient(circle at 20% 30%, rgba(80, 86, 80, 0.035) 0 1px, transparent 1.5px);
+      background-size: auto, 23px 23px;
+      box-shadow: 0 16px 45px rgba(50, 54, 50, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.8);
+    }
+
+    .board {
+      position: relative;
+      display: grid;
+      min-height: 608px;
+    }
+
+    .connectors {
+      position: absolute;
+      inset: 0;
+      z-index: 3;
+      width: 100%;
+      height: 100%;
+      overflow: visible;
+      pointer-events: none;
+    }
+
+    .connector {
+      fill: none;
+      stroke: var(--blue);
+      stroke-width: 2;
+      stroke-dasharray: 2 6;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      opacity: 0.95;
+      vector-effect: non-scaling-stroke;
+    }
+
+    .connector-dot {
+      fill: var(--blue-strong);
+      opacity: 0.9;
+    }
+
+    .stage {
+      position: relative;
+      z-index: 1;
+      min-height: 608px;
+      padding: 12px 18px 32px;
+      border-right: 1px solid rgba(70, 76, 70, 0.09);
+      background: rgba(249, 249, 247, 0.37);
+    }
+
+    .stage:nth-of-type(even) {
+      background: rgba(242, 242, 239, 0.43);
+    }
+
+    .stage:last-child {
+      border-right: 0;
+    }
+
+    .stage-header {
+      position: relative;
+      z-index: 5;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      min-height: 30px;
+      margin-bottom: 14px;
+    }
+
+    .stage-heading-group {
+      display: flex;
+      min-width: 0;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .stage-label {
+      display: inline-flex;
+      min-width: 0;
+      max-width: 220px;
+      min-height: 24px;
+      align-items: center;
+      padding: 0 10px;
+      overflow: hidden;
+      border: 1px solid rgba(70, 76, 70, 0.10);
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.54);
+      color: #8d928d;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 11px;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .stage-edit {
+      display: grid;
+      width: 23px;
+      height: 23px;
+      place-items: center;
+      padding: 0;
+      border: 0;
+      border-radius: 7px;
+      background: transparent;
+      color: #b3b7b3;
+      cursor: pointer;
+      opacity: 0;
+      transition: opacity 130ms ease, color 130ms ease, background 130ms ease;
+    }
+
+    .stage-header:hover .stage-edit,
+    .stage-edit:focus-visible {
+      opacity: 1;
+    }
+
+    .stage-edit:hover {
+      background: rgba(255, 255, 255, 0.72);
+      color: #54afe4;
+    }
+
+    .stage-count {
+      flex: 0 0 auto;
+      color: #b7bbb7;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 10px;
+    }
+
+    .task-grid {
+      position: relative;
+      z-index: 4;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      gap: 10px;
+      min-height: 520px;
+      padding: 4px 8px 70px;
+    }
+
+    .task-grid.single-task {
+      justify-content: center;
+    }
+
+    .task-card {
+      position: relative;
+      display: grid;
+      grid-template-columns: 34px minmax(0, 1fr) 62px;
+      align-items: center;
+      gap: 8px;
+      min-height: 60px;
+      flex: 0 0 60px;
+      padding: 7px 8px;
+      border: 1px solid var(--card-border);
+      border-radius: 12px;
+      background: rgba(255, 255, 255, 0.90);
+      box-shadow: var(--shadow);
+      cursor: default;
+      transition: transform 150ms ease, box-shadow 150ms ease, opacity 150ms ease;
+    }
+
+    .task-card:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 11px 26px rgba(45, 50, 46, 0.10), 0 1px 2px rgba(45, 50, 46, 0.08);
+    }
+
+    .task-card.done {
+      opacity: 0.58;
+    }
+
+    .task-card.done .task-title {
+      text-decoration: line-through;
+      text-decoration-thickness: 1px;
+    }
+
+    .task-check {
+      position: relative;
+      display: grid;
+      width: 34px;
+      height: 34px;
+      place-items: center;
+      border: 1px solid rgba(70, 76, 70, 0.11);
+      border-radius: 8px;
+      background: linear-gradient(#fafaf9, #f2f3f0);
+      cursor: pointer;
+    }
+
+    .task-check input {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .check-mark {
+      display: grid;
+      width: 16px;
+      height: 16px;
+      place-items: center;
+      border: 1px solid rgba(78, 84, 78, 0.17);
+      border-radius: 5px;
+      background: rgba(255, 255, 255, 0.72);
+      color: transparent;
+      font-size: 11px;
+      font-weight: 800;
+      transition: all 140ms ease;
+    }
+
+    .task-check input:checked + .check-mark {
+      border-color: rgba(73, 184, 250, 0.55);
+      background: #e9f7ff;
+      color: #42aee8;
+    }
+
+    .task-copy {
+      min-width: 0;
+    }
+
+    .task-title,
+    .task-description {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .task-title {
+      color: #646964;
+      font-size: 12px;
+      font-weight: 560;
+    }
+
+    .task-description {
+      margin-top: 3px;
+      color: #b0b4b0;
+      font-size: 10px;
+    }
+
+    .task-actions {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 4px;
+    }
+
+    .edit-task,
+    .branch-task {
+      display: grid;
+      width: 27px;
+      height: 27px;
+      place-items: center;
+      padding: 0;
+      border: 1px solid rgba(70, 76, 70, 0.10);
+      border-radius: 7px;
+      background: linear-gradient(#fafbf9, #f1f2ef);
+      color: #b0b5b0;
+      cursor: pointer;
+      transition: color 130ms ease, border-color 130ms ease, background 130ms ease, transform 130ms ease;
+    }
+
+    .edit-task:hover {
+      border-color: rgba(73, 184, 250, 0.34);
+      background: #f7fbfd;
+      color: #78a9c5;
+    }
+
+    .branch-task {
+      border-color: rgba(73, 184, 250, 0.22);
+      background: linear-gradient(#f7fcff, #edf8ff);
+      color: #55afe3;
+      font-size: 15px;
+    }
+
+    .branch-task:hover {
+      border-color: rgba(73, 184, 250, 0.55);
+      background: #e9f7ff;
+      color: #279ddc;
+      transform: translateX(1px);
+    }
+
+    .empty-note {
+      grid-row: 3;
+      align-self: start;
+      padding: 16px;
+      border: 1px dashed rgba(75, 80, 74, 0.14);
+      border-radius: 12px;
+      color: #b1b5b1;
+      text-align: center;
+      font-size: 11px;
+    }
+
+    dialog {
+      width: min(480px, calc(100% - 28px));
+      padding: 0;
+      border: 1px solid rgba(70, 76, 70, 0.15);
+      border-radius: 16px;
+      background: #fbfbf9;
+      color: var(--ink);
+      box-shadow: 0 28px 90px rgba(28, 31, 28, 0.22);
+    }
+
+    dialog::backdrop {
+      background: rgba(45, 50, 46, 0.23);
+      backdrop-filter: blur(3px);
+    }
+
+    .dialog-form,
+    .dialog-panel {
+      padding: 20px;
+    }
+
+    .dialog-title {
+      margin: 0 0 4px;
+      color: #4c514c;
+      font-size: 18px;
+    }
+
+    .dialog-subtitle {
+      margin: 0 0 20px;
+      color: #a1a6a1;
+      font-size: 12px;
+      line-height: 1.45;
+    }
+
+    .field {
+      display: grid;
+      gap: 7px;
+      margin-bottom: 14px;
+    }
+
+    .field label,
+    .field legend {
+      color: #777c77;
+      font-size: 11px;
+      font-weight: 650;
+    }
+
+    .field input[type="text"],
+    .field textarea,
+    .stage-name-input {
+      width: 100%;
+      padding: 11px 12px;
+      border: 1px solid rgba(70, 76, 70, 0.14);
+      border-radius: 10px;
+      outline: none;
+      background: white;
+      color: #505550;
+      transition: border-color 130ms ease, box-shadow 130ms ease;
+    }
+
+    .field input[type="text"]:focus,
+    .field textarea:focus,
+    .stage-name-input:focus {
+      border-color: rgba(73, 184, 250, 0.62);
+      box-shadow: 0 0 0 3px rgba(73, 184, 250, 0.11);
+    }
+
+    .field textarea {
+      min-height: 82px;
+      resize: vertical;
+    }
+
+    .stage-picker {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(105px, 1fr));
+      gap: 7px;
+    }
+
+    .stage-option {
+      position: relative;
+    }
+
+    .stage-option input {
+      position: absolute;
+      opacity: 0;
+    }
+
+    .stage-option span {
+      display: grid;
+      min-height: 38px;
+      place-items: center;
+      padding: 5px 8px;
+      border: 1px solid rgba(70, 76, 70, 0.12);
+      border-radius: 9px;
+      background: white;
+      color: #8e938e;
+      font-size: 11px;
+      text-align: center;
+      cursor: pointer;
+    }
+
+    .stage-option input:checked + span {
+      border-color: rgba(73, 184, 250, 0.48);
+      background: #edf8ff;
+      color: #328fc6;
+      box-shadow: 0 0 0 2px rgba(73, 184, 250, 0.08);
+    }
+
+    .done-row {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      color: #797e79;
+      font-size: 12px;
+    }
+
+    .dialog-actions {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      margin-top: 20px;
+    }
+
+    .dialog-actions-right {
+      display: flex;
+      gap: 8px;
+      margin-left: auto;
+    }
+
+    .hint {
+      margin-top: 10px;
+      color: #aeb2ae;
+      font-size: 10px;
+      text-align: right;
+    }
+
+    .stage-manager-list {
+      display: grid;
+      gap: 8px;
+      max-height: min(54vh, 430px);
+      overflow: auto;
+      padding: 2px;
+    }
+
+    .stage-manager-row {
+      display: grid;
+      grid-template-columns: 25px minmax(0, 1fr) auto;
+      align-items: center;
+      gap: 8px;
+      padding: 7px;
+      border: 1px solid rgba(70, 76, 70, 0.10);
+      border-radius: 11px;
+      background: rgba(255, 255, 255, 0.72);
+    }
+
+    .stage-position {
+      display: grid;
+      width: 24px;
+      height: 24px;
+      place-items: center;
+      border-radius: 7px;
+      background: #f2f3f0;
+      color: #a3a8a3;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 10px;
+    }
+
+    .stage-name-input {
+      min-width: 0;
+      padding: 8px 9px;
+      border-radius: 8px;
+      font-size: 12px;
+    }
+
+    .stage-row-actions {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .icon-button {
+      display: grid;
+      width: 30px;
+      height: 30px;
+      place-items: center;
+      padding: 0;
+      border: 1px solid rgba(70, 76, 70, 0.10);
+      border-radius: 8px;
+      background: #f8f9f6;
+      color: #9da29d;
+      cursor: pointer;
+    }
+
+    .icon-button:hover:not(:disabled) {
+      border-color: rgba(73, 184, 250, 0.38);
+      background: #f0f9ff;
+      color: #49aade;
+    }
+
+    .icon-button.remove:hover:not(:disabled) {
+      border-color: rgba(190, 100, 100, 0.28);
+      background: #fff6f6;
+      color: #bd6969;
+    }
+
+    .icon-button:disabled {
+      cursor: default;
+      opacity: 0.28;
+    }
+
+    .stage-manager-footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      margin-top: 14px;
+    }
+
+    .stage-manager-footer .button:last-child {
+      margin-left: auto;
+    }
+
+    @media (max-width: 700px) {
+      .app {
+        width: calc(100% - 16px);
+        margin: 8px auto;
+      }
+
+      .topbar {
+        align-items: flex-start;
+        flex-direction: column;
+      }
+
+      .brand span {
+        display: none;
+      }
+
+      .toolbar {
+        justify-content: flex-start;
+      }
+
+      .board-library {
+        width: 100%;
+      }
+
+      .board-select {
+        width: 100%;
+        flex: 1;
+      }
+
+      .board-shell {
+        min-height: 72vh;
+      }
+
+      .stage-manager-row {
+        grid-template-columns: 23px minmax(0, 1fr);
+      }
+
+      .stage-row-actions {
+        grid-column: 2;
+        justify-content: flex-end;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="app">
+    <header class="topbar">
+      <div class="brand">
+        Flowline
+        <span>A tiny connected task board, saved locally in your browser</span>
+      </div>
+      <div class="toolbar">
+        <div class="board-library" aria-label="Local saved boards">
+          <select class="board-select" id="boardSelect" aria-label="Choose a saved board"></select>
+          <button class="library-button" id="newBoard" type="button" title="Create a new board" aria-label="Create a new board">＋</button>
+          <button class="library-button" id="saveBoardAs" type="button" title="Save a copy of this board" aria-label="Save a copy of this board">▣</button>
+          <button class="library-button" id="exportBoard" type="button" title="Export this board as JSON" aria-label="Export this board as JSON">↓</button>
+          <button class="library-button" id="importBoard" type="button" title="Import a board from JSON" aria-label="Import a board from JSON">↑</button>
+          <button class="library-button" id="renameBoard" type="button" title="Rename this board" aria-label="Rename this board">✎</button>
+          <button class="library-button delete" id="deleteBoard" type="button" title="Delete this board" aria-label="Delete this board">×</button>
+          <input id="importBoardFile" type="file" accept=".json,application/json" hidden />
+        </div>
+        <button class="button quiet" id="resetBoard" type="button">Reset example</button>
+        <button class="button" id="manageStages" type="button">Manage stages</button>
+        <button class="button primary" id="addTask" type="button">＋ Add task</button>
+      </div>
+    </header>
+
+    <section class="board-shell" id="boardShell" aria-label="Connected task board">
+      <div class="board" id="board">
+        <svg class="connectors" id="connectors" aria-hidden="true"></svg>
+        <div id="stagesHost" style="display: contents;"></div>
+      </div>
+    </section>
+  </main>
+
+  <dialog id="taskDialog">
+    <form class="dialog-form" id="taskForm">
+      <h2 class="dialog-title" id="dialogTitle">Add task</h2>
+      <p class="dialog-subtitle" id="taskDialogSubtitle">
+        Use a card's arrow to create a task connected directly from it.
+      </p>
+
+      <div class="field">
+        <label for="taskTitle">Title</label>
+        <input id="taskTitle" name="title" type="text" maxlength="80" required autocomplete="off" placeholder="e.g. Pick a company name" />
+      </div>
+
+      <div class="field">
+        <label for="taskDescription">Description</label>
+        <textarea id="taskDescription" name="description" maxlength="180" placeholder="A short note, optional"></textarea>
+      </div>
+
+      <fieldset class="field" style="border:0;padding:0;margin-inline:0;">
+        <legend>Stage</legend>
+        <div class="stage-picker" id="stagePicker"></div>
+      </fieldset>
+
+      <label class="done-row">
+        <input id="taskDone" name="done" type="checkbox" />
+        Mark this task as completed
+      </label>
+
+      <div class="dialog-actions">
+        <button class="button danger" id="deleteTask" type="button" hidden>Delete</button>
+        <div class="dialog-actions-right">
+          <button class="button quiet" id="cancelTaskDialog" type="button">Cancel</button>
+          <button class="button primary" type="submit">Save task</button>
+        </div>
+      </div>
+      <div class="hint">The pencil edits a task. The arrow creates a connected task.</div>
+    </form>
+  </dialog>
+
+  <dialog id="stageDialog">
+    <section class="dialog-panel">
+      <h2 class="dialog-title">Manage stages</h2>
+      <p class="dialog-subtitle">
+        Rename stages, add new ones, remove them, or change their order. Changes are saved automatically.
+      </p>
+
+      <div class="stage-manager-list" id="stageManagerList"></div>
+
+      <div class="stage-manager-footer">
+        <button class="button" id="addStage" type="button">＋ Add stage</button>
+        <button class="button primary" id="closeStageDialog" type="button">Done</button>
+      </div>
+    </section>
+  </dialog>
+
+  <script>
+    (() => {
+      "use strict";
+
+      const LEGACY_STORAGE_KEY = "flowline-task-board-v1";
+      const BOARD_LIBRARY_KEY = "flowline-task-board-library-v2";
+      const ACTIVE_BOARD_KEY = "flowline-active-board-v2";
+
+      const defaultStages = [
+        { id: "idea", name: "First stage" },
+        { id: "initial", name: "Second stage" },
+        { id: "identity", name: "Third stage" }
+      ];
+
+      const defaultTasks = [
+        {
+          id: "sample-1",
+          title: "Initial Task",
+          description: "Starting point",
+          stage: "idea",
+          parentId: null,
+          done: false
+        },
+        {
+          id: "sample-2",
+          title: "Follow up Task 01",
+          description: "Connected follow-up",
+          stage: "initial",
+          parentId: "sample-1",
+          done: false
+        },
+        {
+          id: "sample-3",
+          title: "Follow up Task 02",
+          description: "Connected follow-up",
+          stage: "identity",
+          parentId: "sample-2",
+          done: false
+        }
+      ];
+
+      const board = document.getElementById("board");
+      const shell = document.getElementById("boardShell");
+      const stagesHost = document.getElementById("stagesHost");
+      const connectorSvg = document.getElementById("connectors");
+
+      const taskDialog = document.getElementById("taskDialog");
+      const taskForm = document.getElementById("taskForm");
+      const taskTitleInput = document.getElementById("taskTitle");
+      const taskDescriptionInput = document.getElementById("taskDescription");
+      const taskDoneInput = document.getElementById("taskDone");
+      const stagePicker = document.getElementById("stagePicker");
+      const deleteTaskButton = document.getElementById("deleteTask");
+      const taskDialogTitle = document.getElementById("dialogTitle");
+      const taskDialogSubtitle = document.getElementById("taskDialogSubtitle");
+
+      const stageDialog = document.getElementById("stageDialog");
+      const stageManagerList = document.getElementById("stageManagerList");
+
+      const boardSelect = document.getElementById("boardSelect");
+      const importBoardFile = document.getElementById("importBoardFile");
+
+      let boardLibrary = loadBoardLibrary();
+      let activeBoardId = resolveActiveBoardId();
+      let state = loadActiveBoardState();
+      let editingTaskId = null;
+      let creatingParentId = null;
+
+      function cloneDefaults() {
+        return {
+          stages: defaultStages.map(stage => ({ ...stage })),
+          tasks: defaultTasks.map(task => ({ ...task }))
+        };
+      }
+
+      function cloneState(value) {
+        return {
+          stages: value.stages.map(stage => ({ ...stage })),
+          tasks: value.tasks.map(task => ({ ...task }))
+        };
+      }
+
+      function createBlankState() {
+        const stages = defaultStages.map(stage => ({
+          id: makeId("stage"),
+          name: stage.name
+        }));
+
+        return {
+          stages,
+          tasks: [
+            {
+              id: makeId("task"),
+              title: "Initial Task",
+              description: "Starting point",
+              stage: stages[0].id,
+              parentId: null,
+              done: false
+            }
+          ]
+        };
+      }
+
+      function makeId(prefix) {
+        if (window.crypto && typeof window.crypto.randomUUID === "function") {
+          return `${prefix}-${window.crypto.randomUUID()}`;
+        }
+        return `${prefix}-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+      }
+
+      function parseLegacyState() {
+        try {
+          const stored = localStorage.getItem(LEGACY_STORAGE_KEY);
+          if (!stored) {
+            return null;
+          }
+
+          const parsed = JSON.parse(stored);
+
+          if (Array.isArray(parsed)) {
+            return normaliseState({
+              stages: defaultStages,
+              tasks: parsed
+            });
+          }
+
+          if (parsed && Array.isArray(parsed.stages) && Array.isArray(parsed.tasks)) {
+            return normaliseState(parsed);
+          }
+        } catch (error) {
+          console.warn("Could not import the earlier saved board.", error);
+        }
+
+        return null;
+      }
+
+      function loadBoardLibrary() {
+        try {
+          const stored = localStorage.getItem(BOARD_LIBRARY_KEY);
+          if (stored) {
+            const parsed = JSON.parse(stored);
+            const rawBoards = Array.isArray(parsed)
+              ? parsed
+              : parsed?.boards;
+
+            if (Array.isArray(rawBoards) && rawBoards.length) {
+              const boards = rawBoards
+                .filter(board => board && typeof board.id === "string")
+                .map((board, index) => ({
+                  id: board.id,
+                  name: String(board.name || `Board ${index + 1}`).trim() || `Board ${index + 1}`,
+                  state: normaliseState(board.state || cloneDefaults()),
+                  updatedAt: String(board.updatedAt || new Date().toISOString())
+                }));
+
+              if (boards.length) {
+                return { boards };
+              }
+            }
+          }
+        } catch (error) {
+          console.warn("Could not read the local board library.", error);
+        }
+
+        const importedState = parseLegacyState();
+        const firstBoard = {
+          id: makeId("board"),
+          name: importedState ? "My Board" : "Example Board",
+          state: importedState || cloneDefaults(),
+          updatedAt: new Date().toISOString()
+        };
+
+        const library = { boards: [firstBoard] };
+
+        try {
+          localStorage.setItem(BOARD_LIBRARY_KEY, JSON.stringify(library));
+          localStorage.setItem(ACTIVE_BOARD_KEY, firstBoard.id);
+        } catch (error) {
+          console.warn("Could not initialise the local board library.", error);
+        }
+
+        return library;
+      }
+
+      function resolveActiveBoardId() {
+        const requestedId = localStorage.getItem(ACTIVE_BOARD_KEY);
+        const matchingBoard = boardLibrary.boards.find(board => board.id === requestedId);
+        return matchingBoard?.id || boardLibrary.boards[0].id;
+      }
+
+      function getActiveBoard() {
+        return boardLibrary.boards.find(board => board.id === activeBoardId)
+          || boardLibrary.boards[0];
+      }
+
+      function loadActiveBoardState() {
+        return cloneState(normaliseState(getActiveBoard().state));
+      }
+
+      function persistBoardLibrary() {
+        try {
+          localStorage.setItem(BOARD_LIBRARY_KEY, JSON.stringify(boardLibrary));
+          localStorage.setItem(ACTIVE_BOARD_KEY, activeBoardId);
+        } catch (error) {
+          console.warn("Could not save the local board library.", error);
+        }
+      }
+
+      function normaliseState(value) {
+        const seenStageIds = new Set();
+        const stages = value.stages
+          .filter(stage => stage && typeof stage.id === "string")
+          .map(stage => ({
+            id: stage.id,
+            name: String(stage.name || "Untitled stage").trim() || "Untitled stage"
+          }))
+          .filter(stage => {
+            if (seenStageIds.has(stage.id)) {
+              return false;
+            }
+            seenStageIds.add(stage.id);
+            return true;
+          });
+
+        if (!stages.length) {
+          stages.push({ id: makeId("stage"), name: "My stage" });
+        }
+
+        const validIds = new Set(stages.map(stage => stage.id));
+        const firstStageId = stages[0].id;
+
+        const sourceTasks = value.tasks
+          .filter(task => task && typeof task.id === "string");
+
+        const tasks = sourceTasks.map((task, index) => {
+          const alreadyHasParentData = Object.prototype.hasOwnProperty.call(task, "parentId");
+          const legacyParentId = index > 0 ? sourceTasks[index - 1].id : null;
+
+          return {
+            id: task.id,
+            title: String(task.title || "Untitled task"),
+            description: String(task.description || ""),
+            stage: validIds.has(task.stage) ? task.stage : firstStageId,
+            parentId: alreadyHasParentData
+              ? (typeof task.parentId === "string" ? task.parentId : null)
+              : legacyParentId,
+            done: Boolean(task.done)
+          };
+        });
+
+        const validTaskIds = new Set(tasks.map(task => task.id));
+        tasks.forEach(task => {
+          if (
+            task.parentId &&
+            (!validTaskIds.has(task.parentId) || task.parentId === task.id)
+          ) {
+            task.parentId = null;
+          }
+        });
+
+        return { stages, tasks };
+      }
+
+      function saveState() {
+        const activeBoard = getActiveBoard();
+        if (!activeBoard) {
+          return;
+        }
+
+        activeBoard.state = cloneState(normaliseState(state));
+        activeBoard.updatedAt = new Date().toISOString();
+        persistBoardLibrary();
+      }
+
+      function renderBoardSelect() {
+        boardSelect.replaceChildren();
+
+        boardLibrary.boards.forEach(boardItem => {
+          const option = document.createElement("option");
+          option.value = boardItem.id;
+          option.textContent = boardItem.name;
+          option.selected = boardItem.id === activeBoardId;
+          boardSelect.appendChild(option);
+        });
+
+        const deleteButton = document.getElementById("deleteBoard");
+        deleteButton.disabled = boardLibrary.boards.length <= 1;
+      }
+
+      function switchBoard(boardId) {
+        if (boardId === activeBoardId) {
+          return;
+        }
+
+        saveState();
+
+        const selectedBoard = boardLibrary.boards.find(boardItem => boardItem.id === boardId);
+        if (!selectedBoard) {
+          renderBoardSelect();
+          return;
+        }
+
+        activeBoardId = selectedBoard.id;
+        state = cloneState(normaliseState(selectedBoard.state));
+        persistBoardLibrary();
+        renderBoardSelect();
+        renderBoard();
+      }
+
+      function makeUniqueBoardName(baseName) {
+        const cleanedBase = String(baseName || "New Board").trim() || "New Board";
+        const existingNames = new Set(
+          boardLibrary.boards.map(boardItem => boardItem.name.toLocaleLowerCase())
+        );
+
+        if (!existingNames.has(cleanedBase.toLocaleLowerCase())) {
+          return cleanedBase;
+        }
+
+        let suffix = 2;
+        while (existingNames.has(`${cleanedBase} ${suffix}`.toLocaleLowerCase())) {
+          suffix += 1;
+        }
+
+        return `${cleanedBase} ${suffix}`;
+      }
+
+      function createNewBoard() {
+        const suggestedName = makeUniqueBoardName("New Board");
+        const enteredName = window.prompt("Name your new board:", suggestedName);
+
+        if (enteredName === null) {
+          return;
+        }
+
+        const name = makeUniqueBoardName(enteredName);
+        const boardItem = {
+          id: makeId("board"),
+          name,
+          state: createBlankState(),
+          updatedAt: new Date().toISOString()
+        };
+
+        saveState();
+        boardLibrary.boards.push(boardItem);
+        activeBoardId = boardItem.id;
+        state = cloneState(boardItem.state);
+        persistBoardLibrary();
+        renderBoardSelect();
+        renderBoard();
+      }
+
+      function saveBoardAs() {
+        const activeBoard = getActiveBoard();
+        const suggestedName = makeUniqueBoardName(`${activeBoard.name} Copy`);
+        const enteredName = window.prompt("Save a copy of this board as:", suggestedName);
+
+        if (enteredName === null) {
+          return;
+        }
+
+        const name = makeUniqueBoardName(enteredName);
+        const boardItem = {
+          id: makeId("board"),
+          name,
+          state: cloneState(normaliseState(state)),
+          updatedAt: new Date().toISOString()
+        };
+
+        saveState();
+        boardLibrary.boards.push(boardItem);
+        activeBoardId = boardItem.id;
+        state = cloneState(boardItem.state);
+        persistBoardLibrary();
+        renderBoardSelect();
+        renderBoard();
+      }
+
+      function sanitiseFilename(value) {
+        const cleaned = String(value || "flowline-board")
+          .trim()
+          .replace(/[<>:"/\\|?*\u0000-\u001F]/g, "-")
+          .replace(/\s+/g, "-")
+          .replace(/-+/g, "-")
+          .replace(/^-|-$/g, "");
+
+        return cleaned || "flowline-board";
+      }
+
+      function exportActiveBoard() {
+        saveState();
+
+        const activeBoard = getActiveBoard();
+        const payload = {
+          format: "flowline-board",
+          version: 1,
+          exportedAt: new Date().toISOString(),
+          board: {
+            name: activeBoard.name,
+            state: cloneState(normaliseState(activeBoard.state))
+          }
+        };
+
+        const json = JSON.stringify(payload, null, 2);
+        const blob = new Blob([json], {
+          type: "application/json;charset=utf-8"
+        });
+        const objectUrl = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+
+        link.href = objectUrl;
+        link.download = `${sanitiseFilename(activeBoard.name)}.flowline.json`;
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+
+        window.setTimeout(() => URL.revokeObjectURL(objectUrl), 1000);
+      }
+
+      function extractImportedBoard(value) {
+        if (
+          value &&
+          value.format === "flowline-board" &&
+          value.board &&
+          value.board.state
+        ) {
+          return {
+            name: String(value.board.name || "Imported Board"),
+            state: value.board.state
+          };
+        }
+
+        if (
+          value &&
+          typeof value.name === "string" &&
+          value.state &&
+          Array.isArray(value.state.stages) &&
+          Array.isArray(value.state.tasks)
+        ) {
+          return {
+            name: value.name,
+            state: value.state
+          };
+        }
+
+        if (
+          value &&
+          Array.isArray(value.stages) &&
+          Array.isArray(value.tasks)
+        ) {
+          return {
+            name: "Imported Board",
+            state: value
+          };
+        }
+
+        throw new Error("This is not a recognised Flowline board file.");
+      }
+
+      async function importBoardFromFile(file) {
+        if (!file) {
+          return;
+        }
+
+        try {
+          const text = await file.text();
+          const parsed = JSON.parse(text);
+          const imported = extractImportedBoard(parsed);
+          const importedState = normaliseState(imported.state);
+          const suggestedName = makeUniqueBoardName(
+            imported.name.trim() || "Imported Board"
+          );
+          const enteredName = window.prompt(
+            "Save the imported board as:",
+            suggestedName
+          );
+
+          if (enteredName === null) {
+            return;
+          }
+
+          const cleanedName = enteredName.trim();
+          if (!cleanedName) {
+            window.alert("The imported board needs a name.");
+            return;
+          }
+
+          const boardName = makeUniqueBoardName(cleanedName);
+          const boardItem = {
+            id: makeId("board"),
+            name: boardName,
+            state: cloneState(importedState),
+            updatedAt: new Date().toISOString()
+          };
+
+          saveState();
+          boardLibrary.boards.push(boardItem);
+          activeBoardId = boardItem.id;
+          state = cloneState(boardItem.state);
+          persistBoardLibrary();
+          renderBoardSelect();
+          renderBoard();
+        } catch (error) {
+          console.error("Could not import board.", error);
+          window.alert(
+            error instanceof Error
+              ? error.message
+              : "The selected file could not be imported."
+          );
+        } finally {
+          importBoardFile.value = "";
+        }
+      }
+
+      function renameActiveBoard() {
+        const activeBoard = getActiveBoard();
+        const enteredName = window.prompt("Rename this board:", activeBoard.name);
+
+        if (enteredName === null) {
+          return;
+        }
+
+        const cleanedName = enteredName.trim();
+        if (!cleanedName) {
+          window.alert("The board needs a name.");
+          return;
+        }
+
+        const duplicate = boardLibrary.boards.some(boardItem =>
+          boardItem.id !== activeBoard.id &&
+          boardItem.name.toLocaleLowerCase() === cleanedName.toLocaleLowerCase()
+        );
+
+        if (duplicate) {
+          window.alert("A board with that name already exists.");
+          return;
+        }
+
+        activeBoard.name = cleanedName;
+        activeBoard.updatedAt = new Date().toISOString();
+        persistBoardLibrary();
+        renderBoardSelect();
+      }
+
+      function deleteActiveBoard() {
+        if (boardLibrary.boards.length <= 1) {
+          window.alert("At least one board must remain.");
+          return;
+        }
+
+        const activeBoard = getActiveBoard();
+        const confirmed = window.confirm(
+          `Delete “${activeBoard.name}”? This removes only the locally saved copy in this browser.`
+        );
+
+        if (!confirmed) {
+          return;
+        }
+
+        const currentIndex = boardLibrary.boards.findIndex(
+          boardItem => boardItem.id === activeBoard.id
+        );
+
+        boardLibrary.boards = boardLibrary.boards.filter(
+          boardItem => boardItem.id !== activeBoard.id
+        );
+
+        const nextIndex = Math.min(currentIndex, boardLibrary.boards.length - 1);
+        const nextBoard = boardLibrary.boards[Math.max(0, nextIndex)];
+
+        activeBoardId = nextBoard.id;
+        state = cloneState(normaliseState(nextBoard.state));
+        persistBoardLibrary();
+        renderBoardSelect();
+        renderBoard();
+      }
+
+      function stageIndex(stageId) {
+        return state.stages.findIndex(stage => stage.id === stageId);
+      }
+
+      function stageName(stageId) {
+        return state.stages.find(stage => stage.id === stageId)?.name || "Untitled stage";
+      }
+
+      function renderBoard() {
+        stagesHost.replaceChildren();
+
+        const minimumStageWidth = 300;
+        board.style.gridTemplateColumns = `repeat(${state.stages.length}, minmax(${minimumStageWidth}px, 1fr))`;
+        board.style.minWidth = `${Math.max(900, state.stages.length * minimumStageWidth)}px`;
+
+        const stageTaskCounts = new Map(
+          state.stages.map(stage => [
+            stage.id,
+            state.tasks.filter(task => task.stage === stage.id).length
+          ])
+        );
+        const maximumTasksInStage = Math.max(
+          1,
+          ...stageTaskCounts.values()
+        );
+        const taskGridHeight = Math.max(
+          520,
+          (maximumTasksInStage * 60) +
+          (Math.max(0, maximumTasksInStage - 1) * 18) +
+          74
+        );
+
+        state.stages.forEach(stage => {
+          const section = document.createElement("section");
+          section.className = "stage";
+          section.dataset.stage = stage.id;
+
+          const header = document.createElement("header");
+          header.className = "stage-header";
+
+          const headingGroup = document.createElement("div");
+          headingGroup.className = "stage-heading-group";
+
+          const label = document.createElement("span");
+          label.className = "stage-label";
+          label.textContent = stage.name;
+          label.title = stage.name;
+
+          const edit = document.createElement("button");
+          edit.className = "stage-edit";
+          edit.type = "button";
+          edit.textContent = "✎";
+          edit.title = `Edit ${stage.name}`;
+          edit.setAttribute("aria-label", `Edit ${stage.name}`);
+          edit.addEventListener("click", () => openStageDialog(stage.id));
+
+          const count = document.createElement("span");
+          count.className = "stage-count";
+          count.dataset.countFor = stage.id;
+
+          headingGroup.append(label, edit);
+          header.append(headingGroup, count);
+
+          const grid = document.createElement("div");
+          const taskCount = stageTaskCounts.get(stage.id) || 0;
+          grid.className = `task-grid${taskCount === 1 ? " single-task" : ""}`;
+          grid.dataset.gridFor = stage.id;
+          grid.style.height = `${taskGridHeight}px`;
+
+          section.append(header, grid);
+          stagesHost.appendChild(section);
+        });
+
+        if (!state.tasks.length) {
+          state.stages.forEach((stage, index) => {
+            const note = document.createElement("div");
+            note.className = "empty-note";
+            note.textContent = index === 0
+              ? "Add your first task to begin the chain."
+              : "Tasks placed here will appear in sequence.";
+            getGrid(stage.id).appendChild(note);
+          });
+        } else {
+          state.tasks.forEach(task => {
+            getGrid(task.stage).appendChild(createTaskCard(task));
+          });
+        }
+
+        updateCounts();
+        requestAnimationFrame(drawConnectors);
+      }
+
+      function getGrid(stageId) {
+        return stagesHost.querySelector(`[data-grid-for="${CSS.escape(stageId)}"]`);
+      }
+
+      function createTaskCard(task) {
+        const card = document.createElement("article");
+        card.className = `task-card${task.done ? " done" : ""}`;
+        card.dataset.taskId = task.id;
+
+        const checkLabel = document.createElement("label");
+        checkLabel.className = "task-check";
+        checkLabel.title = task.done ? "Mark incomplete" : "Mark complete";
+
+        const checkbox = document.createElement("input");
+        checkbox.type = "checkbox";
+        checkbox.checked = task.done;
+        checkbox.setAttribute("aria-label", `Mark ${task.title} complete`);
+        checkbox.addEventListener("change", () => {
+          task.done = checkbox.checked;
+          saveState();
+          renderBoard();
+        });
+
+        const checkMark = document.createElement("span");
+        checkMark.className = "check-mark";
+        checkMark.textContent = "✓";
+        checkLabel.append(checkbox, checkMark);
+
+        const copy = document.createElement("div");
+        copy.className = "task-copy";
+
+        const title = document.createElement("div");
+        title.className = "task-title";
+        title.textContent = task.title;
+        title.title = task.title;
+
+        const description = document.createElement("div");
+        description.className = "task-description";
+        description.textContent = task.description || "No description";
+        description.title = description.textContent;
+        copy.append(title, description);
+
+        const actions = document.createElement("div");
+        actions.className = "task-actions";
+
+        const edit = document.createElement("button");
+        edit.className = "edit-task";
+        edit.type = "button";
+        edit.textContent = "✎";
+        edit.title = "Edit this task";
+        edit.setAttribute("aria-label", `Edit ${task.title}`);
+        edit.addEventListener("click", () => openTaskDialog(task.id));
+
+        const branch = document.createElement("button");
+        branch.className = "branch-task";
+        branch.type = "button";
+        branch.textContent = "→";
+        branch.title = "Create a task connected from this one";
+        branch.setAttribute("aria-label", `Create a task connected from ${task.title}`);
+        branch.addEventListener("click", () => openTaskDialog(null, task.id));
+
+        actions.append(edit, branch);
+        card.append(checkLabel, copy, actions);
+        return card;
+      }
+
+      function updateCounts() {
+        state.stages.forEach(stage => {
+          const stageTasks = state.tasks.filter(task => task.stage === stage.id);
+          const doneCount = stageTasks.filter(task => task.done).length;
+          const count = stagesHost.querySelector(`[data-count-for="${CSS.escape(stage.id)}"]`);
+          if (count) {
+            count.textContent = `${doneCount}/${stageTasks.length}`;
+          }
+        });
+      }
+
+      function renderStagePicker(selectedStageId) {
+        stagePicker.replaceChildren();
+
+        state.stages.forEach((stage, index) => {
+          const option = document.createElement("label");
+          option.className = "stage-option";
+
+          const radio = document.createElement("input");
+          radio.type = "radio";
+          radio.name = "stage";
+          radio.value = stage.id;
+          radio.checked = stage.id === selectedStageId || (!selectedStageId && index === 0);
+
+          const label = document.createElement("span");
+          label.textContent = stage.name;
+          label.title = stage.name;
+
+          option.append(radio, label);
+          stagePicker.appendChild(option);
+        });
+      }
+
+      function getTaskById(taskId) {
+        return state.tasks.find(task => task.id === taskId) || null;
+      }
+
+      function getNextFollowUpTitle() {
+        const usedNumbers = state.tasks
+          .map(task => {
+            const match = task.title.match(/^Follow up Task\s+(\d+)$/i);
+            return match ? Number.parseInt(match[1], 10) : 0;
+          })
+          .filter(number => Number.isFinite(number));
+
+        const nextNumber = Math.max(0, ...usedNumbers) + 1;
+        return `Follow up Task ${String(nextNumber).padStart(2, "0")}`;
+      }
+
+      function getDirectChildren(parentId) {
+        return state.tasks.filter(task => task.parentId === parentId);
+      }
+
+      function findStageTail(taskId) {
+        let current = getTaskById(taskId);
+        if (!current) {
+          return null;
+        }
+
+        while (current) {
+          const sameStageChildren = getDirectChildren(current.id)
+            .filter(task => task.stage === current.stage);
+
+          if (!sameStageChildren.length) {
+            return current;
+          }
+
+          current = sameStageChildren[sameStageChildren.length - 1];
+        }
+
+        return getTaskById(taskId);
+      }
+
+      function resolveParentIdForNewTask(parentId, targetStageId) {
+        if (!parentId) {
+          return null;
+        }
+
+        const parentTask = getTaskById(parentId);
+        if (!parentTask) {
+          return null;
+        }
+
+        const parentStageIndex = stageIndex(parentTask.stage);
+        const targetStageIndex = stageIndex(targetStageId);
+
+        if (targetStageIndex >= parentStageIndex) {
+          return findStageTail(parentTask.id)?.id || parentTask.id;
+        }
+
+        return parentTask.id;
+      }
+
+      function getRenderedSourceTask(toTask) {
+        if (!toTask.parentId) {
+          return null;
+        }
+
+        const parentTask = getTaskById(toTask.parentId);
+        if (!parentTask) {
+          return null;
+        }
+
+        const parentStageIndex = stageIndex(parentTask.stage);
+        const taskStageIndex = stageIndex(toTask.stage);
+
+        if (taskStageIndex > parentStageIndex) {
+          return findStageTail(parentTask.id) || parentTask;
+        }
+
+        return parentTask;
+      }
+
+      function openTaskDialog(taskId = null, parentId = null) {
+        editingTaskId = taskId;
+        creatingParentId = taskId ? null : parentId;
+
+        const existing = taskId
+          ? state.tasks.find(task => task.id === taskId)
+          : null;
+        const parentTask = creatingParentId
+          ? state.tasks.find(task => task.id === creatingParentId)
+          : null;
+
+        let suggestedStageId = state.stages[0].id;
+        if (parentTask) {
+          const parentStageIndex = stageIndex(parentTask.stage);
+          const nextStageIndex = Math.min(
+            Math.max(parentStageIndex + 1, 0),
+            state.stages.length - 1
+          );
+          suggestedStageId = state.stages[nextStageIndex].id;
+        }
+
+        const defaultStageId = existing?.stage || suggestedStageId;
+
+        if (existing) {
+          taskDialogTitle.textContent = "Edit task";
+          taskDialogSubtitle.textContent = existing.parentId
+            ? `Connected from “${state.tasks.find(task => task.id === existing.parentId)?.title || "another task"}”.`
+            : "This task begins a branch and has no incoming connection.";
+        } else if (parentTask) {
+          taskDialogTitle.textContent = "Add connected task";
+          const chainTail = findStageTail(parentTask.id);
+          taskDialogSubtitle.textContent = chainTail && chainTail.id !== parentTask.id
+            ? `This new task will continue from the last task in this stage chain, currently “${chainTail.title}”.`
+            : `This new task will connect directly from “${parentTask.title}”.`;
+        } else {
+          taskDialogTitle.textContent = "Add task";
+          taskDialogSubtitle.textContent = "This task will begin a new independent branch.";
+        }
+
+        deleteTaskButton.hidden = !existing;
+        taskTitleInput.value = existing?.title || (parentTask ? getNextFollowUpTitle() : "");
+        taskDescriptionInput.value = existing?.description || "";
+        taskDoneInput.checked = Boolean(existing?.done);
+        renderStagePicker(defaultStageId);
+
+        taskDialog.showModal();
+        requestAnimationFrame(() => taskTitleInput.focus());
+      }
+
+      function closeTaskDialog() {
+        editingTaskId = null;
+        creatingParentId = null;
+        taskForm.reset();
+        taskDialog.close();
+      }
+
+      function renderStageManager(focusStageId = null) {
+        stageManagerList.replaceChildren();
+
+        state.stages.forEach((stage, index) => {
+          const row = document.createElement("div");
+          row.className = "stage-manager-row";
+
+          const position = document.createElement("span");
+          position.className = "stage-position";
+          position.textContent = String(index + 1);
+
+          const input = document.createElement("input");
+          input.className = "stage-name-input";
+          input.type = "text";
+          input.maxLength = 50;
+          input.value = stage.name;
+          input.setAttribute("aria-label", `Name of stage ${index + 1}`);
+
+          input.addEventListener("input", () => {
+            const nextName = input.value.trimStart();
+            stage.name = nextName || "Untitled stage";
+            saveState();
+            renderBoard();
+          });
+
+          input.addEventListener("blur", () => {
+            const cleaned = input.value.trim() || "Untitled stage";
+            stage.name = cleaned;
+            input.value = cleaned;
+            saveState();
+            renderBoard();
+          });
+
+          const actions = document.createElement("div");
+          actions.className = "stage-row-actions";
+
+          const left = makeIconButton("←", "Move stage left", index === 0);
+          left.addEventListener("click", () => moveStage(index, index - 1));
+
+          const right = makeIconButton("→", "Move stage right", index === state.stages.length - 1);
+          right.addEventListener("click", () => moveStage(index, index + 1));
+
+          const remove = makeIconButton("×", `Remove ${stage.name}`, state.stages.length === 1, "remove");
+          remove.addEventListener("click", () => removeStage(stage.id));
+
+          actions.append(left, right, remove);
+          row.append(position, input, actions);
+          stageManagerList.appendChild(row);
+
+          if (stage.id === focusStageId) {
+            requestAnimationFrame(() => {
+              input.focus();
+              input.select();
+              row.scrollIntoView({ block: "nearest" });
+            });
+          }
+        });
+      }
+
+      function makeIconButton(text, label, disabled, extraClass = "") {
+        const button = document.createElement("button");
+        button.className = `icon-button ${extraClass}`.trim();
+        button.type = "button";
+        button.textContent = text;
+        button.title = label;
+        button.setAttribute("aria-label", label);
+        button.disabled = disabled;
+        return button;
+      }
+
+      function openStageDialog(focusStageId = null) {
+        renderStageManager(focusStageId);
+        stageDialog.showModal();
+      }
+
+      function closeStageDialog() {
+        stageDialog.close();
+      }
+
+      function addStage() {
+        const stage = {
+          id: makeId("stage"),
+          name: "New stage"
+        };
+
+        state.stages.push(stage);
+        saveState();
+        renderBoard();
+        renderStageManager(stage.id);
+      }
+
+      function moveStage(fromIndex, toIndex) {
+        if (
+          fromIndex < 0 ||
+          toIndex < 0 ||
+          fromIndex >= state.stages.length ||
+          toIndex >= state.stages.length
+        ) {
+          return;
+        }
+
+        const [stage] = state.stages.splice(fromIndex, 1);
+        state.stages.splice(toIndex, 0, stage);
+        saveState();
+        renderBoard();
+        renderStageManager(stage.id);
+      }
+
+      function removeStage(stageId) {
+        if (state.stages.length <= 1) {
+          window.alert("The board needs at least one stage.");
+          return;
+        }
+
+        const index = stageIndex(stageId);
+        if (index < 0) {
+          return;
+        }
+
+        const stage = state.stages[index];
+        const destination = index > 0 ? state.stages[index - 1] : state.stages[index + 1];
+        const affectedTasks = state.tasks.filter(task => task.stage === stageId);
+        const taskMessage = affectedTasks.length
+          ? ` ${affectedTasks.length} task${affectedTasks.length === 1 ? "" : "s"} will be moved to “${destination.name}”.`
+          : "";
+
+        const confirmed = window.confirm(`Remove “${stage.name}”?${taskMessage}`);
+        if (!confirmed) {
+          return;
+        }
+
+        affectedTasks.forEach(task => {
+          task.stage = destination.id;
+        });
+        state.stages.splice(index, 1);
+
+        saveState();
+        renderBoard();
+        renderStageManager(destination.id);
+      }
+
+      function drawConnectors() {
+        connectorSvg.replaceChildren();
+
+        const boardRect = board.getBoundingClientRect();
+        connectorSvg.setAttribute("viewBox", `0 0 ${board.scrollWidth} ${board.scrollHeight}`);
+        connectorSvg.setAttribute("width", String(board.scrollWidth));
+        connectorSvg.setAttribute("height", String(board.scrollHeight));
+
+        state.tasks.forEach(toTask => {
+          if (!toTask.parentId) {
+            return;
+          }
+
+          const fromTask = getRenderedSourceTask(toTask);
+          if (!fromTask) {
+            return;
+          }
+
+          const from = board.querySelector(`[data-task-id="${CSS.escape(fromTask.id)}"]`);
+          const to = board.querySelector(`[data-task-id="${CSS.escape(toTask.id)}"]`);
+
+          if (!from || !to) {
+            return;
+          }
+
+          const a = from.getBoundingClientRect();
+          const b = to.getBoundingClientRect();
+          const fromStageIndex = stageIndex(fromTask.stage);
+          const toStageIndex = stageIndex(toTask.stage);
+
+          let startX;
+          let startY;
+          let endX;
+          let endY;
+          let pathData;
+
+          if (toStageIndex > fromStageIndex) {
+            startX = a.right - boardRect.left;
+            startY = a.top - boardRect.top + a.height / 2;
+            endX = b.left - boardRect.left;
+            endY = b.top - boardRect.top + b.height / 2;
+            const middleX = startX + Math.max(18, (endX - startX) * 0.5);
+            pathData = `M ${startX} ${startY} H ${middleX} V ${endY} H ${endX}`;
+          } else if (toStageIndex === fromStageIndex) {
+            const overlapLeft = Math.max(a.left, b.left);
+            const overlapRight = Math.min(a.right, b.right);
+            const verticalX = ((overlapLeft + overlapRight) / 2) - boardRect.left;
+            startX = verticalX;
+            startY = a.bottom - boardRect.top;
+            endX = verticalX;
+            endY = b.top - boardRect.top;
+            pathData = `M ${startX} ${startY} V ${endY}`;
+          } else {
+            startX = a.left - boardRect.left;
+            startY = a.top - boardRect.top + a.height / 2;
+            endX = b.right - boardRect.left;
+            endY = b.top - boardRect.top + b.height / 2;
+            const loopX = Math.min(startX, endX) - 24;
+            pathData = `M ${startX} ${startY} H ${loopX} V ${endY} H ${endX}`;
+          }
+
+          const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+          path.setAttribute("class", "connector");
+          path.setAttribute("d", pathData);
+
+          const startDot = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+          startDot.setAttribute("class", "connector-dot");
+          startDot.setAttribute("cx", String(startX));
+          startDot.setAttribute("cy", String(startY));
+          startDot.setAttribute("r", "2");
+
+          const endDot = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+          endDot.setAttribute("class", "connector-dot");
+          endDot.setAttribute("cx", String(endX));
+          endDot.setAttribute("cy", String(endY));
+          endDot.setAttribute("r", "2");
+
+          connectorSvg.append(path, startDot, endDot);
+        });
+      }
+
+      boardSelect.addEventListener("change", () => switchBoard(boardSelect.value));
+      document.getElementById("newBoard").addEventListener("click", createNewBoard);
+      document.getElementById("saveBoardAs").addEventListener("click", saveBoardAs);
+      document.getElementById("exportBoard").addEventListener("click", exportActiveBoard);
+      document.getElementById("importBoard").addEventListener("click", () => importBoardFile.click());
+      importBoardFile.addEventListener("change", () => {
+        importBoardFromFile(importBoardFile.files?.[0] || null);
+      });
+      document.getElementById("renameBoard").addEventListener("click", renameActiveBoard);
+      document.getElementById("deleteBoard").addEventListener("click", deleteActiveBoard);
+
+      document.getElementById("addTask").addEventListener("click", () => openTaskDialog());
+      document.getElementById("manageStages").addEventListener("click", () => openStageDialog());
+      document.getElementById("addStage").addEventListener("click", addStage);
+      document.getElementById("closeStageDialog").addEventListener("click", closeStageDialog);
+      document.getElementById("cancelTaskDialog").addEventListener("click", closeTaskDialog);
+
+      deleteTaskButton.addEventListener("click", () => {
+        if (!editingTaskId) {
+          return;
+        }
+
+        const deletedTask = state.tasks.find(task => task.id === editingTaskId);
+        const replacementParentId = deletedTask?.parentId || null;
+
+        state.tasks.forEach(task => {
+          if (task.parentId === editingTaskId) {
+            task.parentId = replacementParentId;
+          }
+        });
+
+        state.tasks = state.tasks.filter(task => task.id !== editingTaskId);
+        saveState();
+        closeTaskDialog();
+        renderBoard();
+      });
+
+      taskForm.addEventListener("submit", event => {
+        event.preventDefault();
+
+        const formData = new FormData(taskForm);
+        const title = String(formData.get("title") || "").trim();
+        const description = String(formData.get("description") || "").trim();
+        const selectedStageId = String(formData.get("stage") || state.stages[0].id);
+        const validStageId = state.stages.some(stage => stage.id === selectedStageId)
+          ? selectedStageId
+          : state.stages[0].id;
+
+        if (!title) {
+          return;
+        }
+
+        if (editingTaskId) {
+          const task = state.tasks.find(item => item.id === editingTaskId);
+          if (task) {
+            task.title = title;
+            task.description = description;
+            task.stage = validStageId;
+            task.done = taskDoneInput.checked;
+          }
+        } else {
+          state.tasks.push({
+            id: makeId("task"),
+            title,
+            description,
+            stage: validStageId,
+            parentId: resolveParentIdForNewTask(creatingParentId, validStageId),
+            done: taskDoneInput.checked
+          });
+        }
+
+        saveState();
+        closeTaskDialog();
+        renderBoard();
+      });
+
+      taskDialog.addEventListener("click", event => {
+        if (event.target === taskDialog) {
+          closeTaskDialog();
+        }
+      });
+
+      taskDialog.addEventListener("cancel", event => {
+        event.preventDefault();
+        closeTaskDialog();
+      });
+
+      stageDialog.addEventListener("click", event => {
+        if (event.target === stageDialog) {
+          closeStageDialog();
+        }
+      });
+
+      document.getElementById("resetBoard").addEventListener("click", () => {
+        const shouldReset = window.confirm(
+          `Reset “${getActiveBoard().name}” to the original example?`
+        );
+        if (!shouldReset) {
+          return;
+        }
+
+        state = cloneDefaults();
+        saveState();
+        renderBoard();
+      });
+
+      window.addEventListener("resize", () => requestAnimationFrame(drawConnectors));
+      shell.addEventListener("scroll", () => requestAnimationFrame(drawConnectors), { passive: true });
+
+      if ("ResizeObserver" in window) {
+        const resizeObserver = new ResizeObserver(() => requestAnimationFrame(drawConnectors));
+        resizeObserver.observe(board);
+      }
+
+      renderBoardSelect();
+      renderBoard();
+    })();
+  </script>
+</body>
+</html>
