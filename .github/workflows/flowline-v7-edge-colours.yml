@@ -5,7 +5,7 @@ on:
     paths:
       - '.github/workflows/flowline-v7-edge-colours.yml'
   issues:
-    types: [opened]
+    types: [opened, edited]
 
 permissions:
   contents: write
@@ -265,8 +265,30 @@ jobs:
 FLOWLINE_PATCH
           git apply --check /tmp/flowline-v7.patch
           git apply /tmp/flowline-v7.patch
+          python3 - <<'PY'
+          from pathlib import Path
+          path = Path('index.html')
+          text = path.read_text(encoding='utf-8')
+          text = text.replace(
+              '      let editingNodeColourStyle = "gradient";\n      let editingEdgeColour = null;',
+              '      let editingNodeColourStyle = "solid";\n      let editingEdgeColour = null;',
+              1,
+          )
+          text = text.replace(
+              '        editingNodeColourStyle = existing?.nodeColorStyle === "solid"\n          ? "solid"\n          : "gradient";\n        editingEdgeColour = existing?.edgeColor || null;',
+              '        editingNodeColourStyle = existing\n          ? (existing.nodeColorStyle === "solid" ? "solid" : "gradient")\n          : "solid";\n        editingEdgeColour = existing?.edgeColor || null;',
+              1,
+          )
+          text = text.replace(
+              '        editingNodeColourStyle = "gradient";\n        editingEdgeColour = null;',
+              '        editingNodeColourStyle = "solid";\n        editingEdgeColour = null;',
+              1,
+          )
+          path.write_text(text, encoding='utf-8')
+          PY
           grep -q 'Outgoing edge colour' index.html
           grep -q 'color: getOutgoingEdgeColor(fromTask)' index.html
+          grep -q 'let editingNodeColourStyle = "solid"' index.html
 
       - name: Commit Flowline v7
         shell: bash
@@ -274,5 +296,5 @@ FLOWLINE_PATCH
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add index.html
-          git commit -m "Add per-node edge colour overrides"
+          git commit -m "Add per-node edge colours and solid node default"
           git push origin HEAD:main
