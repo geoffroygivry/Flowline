@@ -18,29 +18,34 @@
 </head>
 <body>
   <div id="loading">Loading Flowline…</div>
+  <script src="./payload/flowline-v8-01.js"></script>
+  <script src="./payload/flowline-v8-02.js"></script>
+  <script src="./payload/flowline-v8-03.js"></script>
+  <script src="./payload/flowline-v8-04.js"></script>
+  <script src="./payload/flowline-v8-05.js"></script>
+  <script src="./payload/flowline-v8-06.js"></script>
+  <script src="./payload/flowline-v8-07.js"></script>
+  <script src="./payload/flowline-v8-08.js"></script>
+  <script src="./payload/flowline-v8-09.js"></script>
   <script>
     (async () => {
-      const response = await fetch("./flowline-v7.payload", { cache: "no-store" });
-      if (!response.ok) {
-        throw new Error(`Could not load Flowline payload (${response.status})`);
+      if (!("DecompressionStream" in window)) {
+        throw new Error("This browser does not support DecompressionStream.");
       }
-
-      const payload = (await response.text()).replace(/\s+/g, "");
-      const bytes = Uint8Array.from(atob(payload), character => character.charCodeAt(0));
-      const stream = new Blob([bytes])
-        .stream()
-        .pipeThrough(new DecompressionStream("gzip"));
+      const payload = String(window.__FLOWLINE_V8_PAYLOAD || "").replace(/\s+/g, "");
+      if (!payload) {
+        throw new Error("Flowline payload is missing.");
+      }
+      const bytes = Uint8Array.from(atob(payload), c => c.charCodeAt(0));
+      const stream = new Blob([bytes]).stream().pipeThrough(new DecompressionStream("gzip"));
       const source = await new Response(stream).text();
-
       document.open();
       document.write(source);
       document.close();
     })().catch(error => {
       console.error(error);
       const loading = document.getElementById("loading");
-      if (loading) {
-        loading.textContent = "Flowline could not start in this browser.";
-      }
+      if (loading) loading.textContent = "Flowline could not start in this browser.";
     });
   </script>
 </body>
