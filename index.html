@@ -204,25 +204,53 @@
 
     .connector {
       fill: none;
-      stroke: var(--blue);
-      stroke-width: 2;
-      stroke-dasharray: 2 6;
+      stroke: var(--edge-color, var(--blue));
+      stroke-width: 2.15;
+      stroke-dasharray: 4 5;
       stroke-linecap: round;
       stroke-linejoin: round;
-      opacity: 0.95;
+      opacity: 0.94;
       vector-effect: non-scaling-stroke;
+      transition: opacity 120ms ease, stroke-width 120ms ease;
     }
 
     .connector-dot {
-      fill: var(--blue-strong);
-      opacity: 0.9;
+      fill: var(--edge-color, var(--blue-strong));
+      opacity: 0.96;
+      transition: opacity 120ms ease;
+    }
+
+    .connector.is-direct {
+      stroke-width: 3.4;
+      stroke-dasharray: none;
+      opacity: 1;
+    }
+
+    .connector.is-family {
+      opacity: 0.48;
+    }
+
+    .connector.is-dimmed {
+      opacity: 0.08;
+    }
+
+    .connector-dot.is-direct {
+      opacity: 1;
+    }
+
+    .connector-dot.is-family {
+      opacity: 0.55;
+    }
+
+    .connector-dot.is-dimmed {
+      opacity: 0.10;
     }
 
     .stage {
       position: relative;
       z-index: 1;
       min-height: 608px;
-      padding: 12px 18px 32px;
+      padding: 12px 24px 32px;
       border-right: 1px solid rgba(70, 76, 70, 0.09);
       background: rgba(249, 249, 247, 0.37);
     }
@@ -311,28 +339,81 @@
       justify-content: space-between;
       gap: 10px;
       min-height: 520px;
-      padding: 4px 8px 70px;
+      padding: 4px 8px 10px;
     }
 
     .task-grid.single-task {
       justify-content: center;
     }
 
+    .task-grid.drag-active {
+      outline: 1px dashed rgba(73, 184, 250, 0.18);
+      outline-offset: 5px;
+      border-radius: 12px;
+    }
+
+    .task-grid.drop-target {
+      background: rgba(73, 184, 250, 0.025);
+    }
+
+    .drop-indicator {
+      position: absolute;
+      z-index: 20;
+      height: 3px;
+      border-radius: 999px;
+      background: #49b8fa;
+      box-shadow:
+        0 0 0 1px rgba(255, 255, 255, 0.90),
+        0 0 10px rgba(73, 184, 250, 0.36);
+      pointer-events: none;
+      opacity: 0;
+      transform: translateY(-50%);
+      transition: opacity 80ms ease;
+    }
+
+    .drop-indicator.visible {
+      opacity: 1;
+    }
+
+    body.node-dragging,
+    body.node-dragging * {
+      cursor: grabbing !important;
+    }
+
     .task-card {
       position: relative;
       display: grid;
       grid-template-columns: 34px minmax(0, 1fr) 62px;
-      align-items: center;
+      align-items: start;
       gap: 8px;
-      min-height: 60px;
-      flex: 0 0 60px;
-      padding: 7px 8px;
+      min-height: 72px;
+      flex: 0 0 auto;
+      padding: 9px 8px;
       border: 1px solid var(--card-border);
       border-radius: 12px;
-      background: rgba(255, 255, 255, 0.90);
+      background: rgba(255, 255, 255, 0.92);
       box-shadow: var(--shadow);
-      cursor: default;
-      transition: transform 150ms ease, box-shadow 150ms ease, opacity 150ms ease;
+      cursor: grab;
+      user-select: none;
+      transition:
+        transform 150ms ease,
+        box-shadow 150ms ease,
+        border-color 150ms ease,
+        opacity 150ms ease;
+    }
+
+    .task-card:active {
+      cursor: grabbing;
+    }
+
+    .task-card.dragging {
+      opacity: 0.28;
+      transform: scale(0.985);
+      box-shadow: none;
+    }
+
+    .task-card.dragging * {
+      pointer-events: none;
     }
 
     .task-card:hover {
@@ -340,13 +421,101 @@
       box-shadow: 0 11px 26px rgba(45, 50, 46, 0.10), 0 1px 2px rgba(45, 50, 46, 0.08);
     }
 
-    .task-card.done {
-      opacity: 0.58;
+    .task-card.has-node-color {
+      border-color: color-mix(
+        in srgb,
+        var(--node-color) 42%,
+        rgba(70, 76, 70, 0.13)
+      );
+      background:
+        linear-gradient(
+          90deg,
+          color-mix(in srgb, var(--node-color) 11%, white) 0%,
+          color-mix(in srgb, var(--node-color) 4%, white) 38%,
+          rgba(255, 255, 255, 0.96) 100%
+        );
+      box-shadow:
+        0 8px 22px color-mix(in srgb, var(--node-color) 10%, transparent),
+        0 1px 2px rgba(45, 50, 46, 0.08);
+    }
+
+    .task-card.has-node-color::before {
+      content: "";
+      position: absolute;
+      top: 10px;
+      bottom: 10px;
+      left: 0;
+      width: 3px;
+      border-radius: 0 999px 999px 0;
+      background: var(--node-color);
+      box-shadow: 0 0 11px color-mix(in srgb, var(--node-color) 55%, transparent);
+      pointer-events: none;
+    }
+
+    .task-card.has-node-color:hover {
+      box-shadow:
+        0 12px 28px color-mix(in srgb, var(--node-color) 13%, transparent),
+        0 1px 2px rgba(45, 50, 46, 0.08);
+    }
+
+    .task-card.has-node-color.node-color-solid {
+      border-color: color-mix(in srgb, var(--node-color) 74%, rgba(45, 50, 46, 0.16));
+      background: var(--node-color);
+      box-shadow:
+        0 10px 26px color-mix(in srgb, var(--node-color) 20%, transparent),
+        0 1px 2px rgba(45, 50, 46, 0.10);
+    }
+
+    .task-card.has-node-color.node-color-solid::before {
+      width: 5px;
+      background: color-mix(in srgb, var(--node-text-color) 88%, transparent);
+      box-shadow: none;
+      opacity: 0.88;
+    }
+
+    .task-card.has-node-color.node-color-solid:hover {
+      box-shadow:
+        0 13px 30px color-mix(in srgb, var(--node-color) 24%, transparent),
+        0 1px 2px rgba(45, 50, 46, 0.10);
+    }
+
+    .task-card.has-node-color.node-color-solid .task-title,
+    .task-card.has-node-color.node-color-solid .task-description,
+    .task-card.has-node-color.node-color-solid .task-checklist-item,
+    .task-card.has-node-color.node-color-solid .task-checklist-text {
+      color: var(--node-text-color);
+    }
+
+    .task-card.has-node-color.node-color-solid .task-description {
+      opacity: 0.78;
+    }
+
+    .task-card.has-node-color.node-color-solid .task-check {
+      border-color: color-mix(in srgb, var(--node-text-color) 15%, rgba(255, 255, 255, 0.45));
+      background: color-mix(in srgb, var(--node-text-color) 9%, rgba(255, 255, 255, 0.28));
+    }
+
+    .task-card.has-node-color.node-color-solid .check-mark {
+      border-color: color-mix(in srgb, var(--node-text-color) 22%, transparent);
+      background: rgba(255, 255, 255, 0.60);
+    }
+
+    .task-card.has-node-color.node-color-solid .task-checklist-item input {
+      accent-color: color-mix(in srgb, var(--node-text-color) 72%, var(--node-color));
+    }
+
+    .task-card.done:not(.has-node-color) {
+      border-color: rgba(18, 183, 106, 0.20);
     }
 
     .task-card.done .task-title {
       text-decoration: line-through;
       text-decoration-thickness: 1px;
+      opacity: 0.70;
+    }
+
+    .task-card.done .task-description {
+      opacity: 0.62;
     }
 
     .task-check {
@@ -354,6 +523,7 @@
       display: grid;
       width: 34px;
       height: 34px;
+      margin-top: 1px;
       place-items: center;
       border: 1px solid rgba(70, 76, 70, 0.11);
       border-radius: 8px;
@@ -384,13 +554,20 @@
     }
 
     .task-check input:checked + .check-mark {
-      border-color: rgba(73, 184, 250, 0.55);
-      background: #e9f7ff;
-      color: #42aee8;
+      border-color: rgba(18, 183, 106, 0.55);
+      background: #eafbf3;
+      color: #12a866;
     }
 
     .task-copy {
       min-width: 0;
+    }
+
+    .task-title-row {
+      display: flex;
+      min-width: 0;
+      align-items: center;
+      gap: 7px;
     }
 
     .task-title,
@@ -401,9 +578,11 @@
     }
 
     .task-title {
+      min-width: 0;
+      flex: 1;
       color: #646964;
       font-size: 12px;
-      font-weight: 560;
+      font-weight: 600;
     }
 
     .task-description {
@@ -412,8 +591,97 @@
       font-size: 10px;
     }
 
+    .task-status {
+      flex: 0 0 auto;
+      display: inline-flex;
+      min-height: 19px;
+      align-items: center;
+      padding: 0 7px;
+      border-radius: 999px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 9px;
+      font-weight: 800;
+      letter-spacing: 0.04em;
+      line-height: 1;
+    }
+
+    .task-status.wip {
+      border: 1px solid rgba(245, 158, 11, 0.30);
+      background: #fff3d5;
+      color: #b86d00;
+    }
+
+    .task-status.done {
+      border: 1px solid rgba(18, 183, 106, 0.34);
+      background: #dff9eb;
+      color: #07854b;
+    }
+
+    .task-checklist {
+      display: grid;
+      gap: 4px;
+      max-height: 92px;
+      margin-top: 7px;
+      padding-right: 3px;
+      overflow-y: auto;
+      overscroll-behavior: contain;
+    }
+
+    .task-checklist::-webkit-scrollbar {
+      width: 5px;
+    }
+
+    .task-checklist::-webkit-scrollbar-thumb {
+      border-radius: 999px;
+      background: rgba(100, 105, 100, 0.18);
+    }
+
+    .task-checklist-item {
+      display: grid;
+      grid-template-columns: 14px minmax(0, 1fr);
+      align-items: center;
+      gap: 6px;
+      min-height: 18px;
+      color: #7e847e;
+      font-size: 10px;
+      cursor: pointer;
+    }
+
+    .task-checklist-item.completed {
+      color: #a9aea9;
+      text-decoration: line-through;
+    }
+
+    .task-checklist-item input {
+      width: 13px;
+      height: 13px;
+      margin: 0;
+      accent-color: #12b76a;
+      cursor: pointer;
+    }
+
+    .task-checklist-text {
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .task-check,
+    .task-actions,
+    .task-checklist,
+    .task-checklist-item,
+    .edit-task,
+    .branch-task,
+    .task-check input,
+    .task-checklist-item input {
+      cursor: pointer;
+      user-select: auto;
+    }
+
     .task-actions {
       display: flex;
+      align-self: center;
       align-items: center;
       justify-content: flex-end;
       gap: 4px;
@@ -441,16 +709,16 @@
     }
 
     .branch-task {
-      border-color: rgba(73, 184, 250, 0.22);
-      background: linear-gradient(#f7fcff, #edf8ff);
-      color: #55afe3;
+      border-color: color-mix(in srgb, var(--dependency-color, #55afe3) 30%, transparent);
+      background: color-mix(in srgb, var(--dependency-color, #55afe3) 8%, white);
+      color: var(--dependency-color, #55afe3);
       font-size: 15px;
     }
 
     .branch-task:hover {
-      border-color: rgba(73, 184, 250, 0.55);
-      background: #e9f7ff;
-      color: #279ddc;
+      border-color: color-mix(in srgb, var(--dependency-color, #55afe3) 60%, transparent);
+      background: color-mix(in srgb, var(--dependency-color, #55afe3) 13%, white);
+      color: var(--dependency-color, #279ddc);
       transform: translateX(1px);
     }
 
@@ -578,6 +846,264 @@
       gap: 9px;
       color: #797e79;
       font-size: 12px;
+    }
+
+    .node-colour-shell {
+      display: grid;
+      gap: 9px;
+    }
+
+    .node-colour-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+    }
+
+    .node-colour-label {
+      color: #777c77;
+      font-size: 11px;
+      font-weight: 650;
+    }
+
+    .node-colour-value {
+      color: #a0a5a0;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 10px;
+    }
+
+    .colour-swatches {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 7px;
+    }
+
+    .colour-swatch {
+      position: relative;
+      display: grid;
+      width: 27px;
+      height: 27px;
+      place-items: center;
+      padding: 0;
+      border: 2px solid transparent;
+      border-radius: 9px;
+      background: var(--swatch, #f2f2ef);
+      box-shadow:
+        inset 0 0 0 1px rgba(40, 44, 40, 0.09),
+        0 2px 7px color-mix(in srgb, var(--swatch, #aaa) 18%, transparent);
+      cursor: pointer;
+      transition: transform 120ms ease, border-color 120ms ease;
+    }
+
+    .colour-swatch:hover {
+      transform: translateY(-1px) scale(1.04);
+    }
+
+    .colour-swatch.selected {
+      border-color: #4f5550;
+    }
+
+    .colour-swatch.selected::after {
+      content: "✓";
+      display: grid;
+      width: 15px;
+      height: 15px;
+      place-items: center;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.90);
+      color: #4d524d;
+      font-size: 10px;
+      font-weight: 900;
+      box-shadow: 0 1px 3px rgba(40, 44, 40, 0.15);
+    }
+
+    .colour-swatch.default-colour {
+      background:
+        linear-gradient(
+          135deg,
+          #f2f2ef 0 44%,
+          #c9cdca 44% 50%,
+          #ffffff 50% 100%
+        );
+    }
+
+    .custom-colour-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .custom-colour-picker {
+      width: 40px;
+      height: 32px;
+      padding: 2px;
+      border: 1px solid rgba(70, 76, 70, 0.13);
+      border-radius: 9px;
+      background: white;
+      cursor: pointer;
+    }
+
+    .custom-colour-button {
+      min-height: 32px;
+      padding: 0 10px;
+      border: 1px solid rgba(73, 184, 250, 0.22);
+      border-radius: 9px;
+      background: #f4faff;
+      color: #438fba;
+      cursor: pointer;
+      font-size: 10px;
+      font-weight: 650;
+    }
+
+    .saved-colour-group {
+      display: grid;
+      gap: 6px;
+    }
+
+    .saved-colour-title {
+      color: #a1a6a1;
+      font-size: 9px;
+      font-weight: 650;
+      letter-spacing: 0.02em;
+    }
+
+    .saved-colours-empty {
+      color: #b1b5b1;
+      font-size: 9px;
+    }
+
+    .node-colour-style-shell {
+      display: grid;
+      gap: 7px;
+      margin-top: 2px;
+    }
+
+    .node-colour-style-label {
+      color: #a1a6a1;
+      font-size: 9px;
+      font-weight: 650;
+      letter-spacing: 0.02em;
+    }
+
+    .node-colour-style-options {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 7px;
+    }
+
+    .node-colour-style-option {
+      display: inline-flex;
+      min-height: 28px;
+      align-items: center;
+      justify-content: center;
+      padding: 0 10px;
+      border: 1px solid rgba(70, 76, 70, 0.12);
+      border-radius: 9px;
+      background: #fafaf8;
+      color: #7a7f7a;
+      cursor: pointer;
+      font-size: 10px;
+      font-weight: 650;
+      transition: border-color 120ms ease, background 120ms ease, color 120ms ease;
+    }
+
+    .node-colour-style-option.selected {
+      border-color: rgba(73, 184, 250, 0.42);
+      background: #eef8ff;
+      color: #3d95c9;
+    }
+
+    .checklist-editor-shell {
+      display: grid;
+      gap: 8px;
+    }
+
+    .checklist-editor-toolbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+    }
+
+    .checklist-editor-toolbar label {
+      color: #777c77;
+      font-size: 11px;
+      font-weight: 650;
+    }
+
+    .checklist-add {
+      min-height: 28px;
+      padding: 0 9px;
+      border: 1px solid rgba(73, 184, 250, 0.24);
+      border-radius: 8px;
+      background: #f3faff;
+      color: #429ed1;
+      cursor: pointer;
+      font-size: 10px;
+      font-weight: 650;
+    }
+
+    .checklist-editor {
+      display: grid;
+      gap: 6px;
+    }
+
+    .checklist-editor-row {
+      display: grid;
+      grid-template-columns: 18px minmax(0, 1fr) 28px;
+      align-items: center;
+      gap: 7px;
+    }
+
+    .checklist-editor-row input[type="checkbox"] {
+      width: 15px;
+      height: 15px;
+      margin: 0;
+      accent-color: #12b76a;
+    }
+
+    .checklist-item-input {
+      width: 100%;
+      min-width: 0;
+      padding: 8px 9px;
+      border: 1px solid rgba(70, 76, 70, 0.14);
+      border-radius: 8px;
+      outline: none;
+      background: white;
+      color: #555a55;
+      font-size: 11px;
+    }
+
+    .checklist-item-input:focus {
+      border-color: rgba(73, 184, 250, 0.62);
+      box-shadow: 0 0 0 3px rgba(73, 184, 250, 0.09);
+    }
+
+    .checklist-remove {
+      display: grid;
+      width: 28px;
+      height: 28px;
+      place-items: center;
+      padding: 0;
+      border: 1px solid rgba(70, 76, 70, 0.10);
+      border-radius: 8px;
+      background: #fafaf8;
+      color: #a8ada8;
+      cursor: pointer;
+    }
+
+    .checklist-remove:hover {
+      border-color: rgba(190, 100, 100, 0.26);
+      background: #fff6f6;
+      color: #bd6969;
+    }
+
+    .checklist-editor-empty {
+      padding: 10px 11px;
+      border: 1px dashed rgba(70, 76, 70, 0.13);
+      border-radius: 9px;
+      color: #adb2ad;
+      font-size: 10px;
     }
 
     .dialog-actions {
@@ -756,6 +1282,7 @@
     <section class="board-shell" id="boardShell" aria-label="Connected task board">
       <div class="board" id="board">
         <svg class="connectors" id="connectors" aria-hidden="true"></svg>
+        <div class="drop-indicator" id="dropIndicator" aria-hidden="true"></div>
         <div id="stagesHost" style="display: contents;"></div>
       </div>
     </section>
@@ -783,9 +1310,63 @@
         <div class="stage-picker" id="stagePicker"></div>
       </fieldset>
 
+      <div class="field node-colour-shell">
+        <div class="node-colour-header">
+          <span class="node-colour-label">Node colour</span>
+          <span class="node-colour-value" id="nodeColourValue">Default</span>
+        </div>
+
+        <div class="colour-swatches" id="nodeColourPresets"></div>
+
+        <div class="custom-colour-row">
+          <input
+            class="custom-colour-picker"
+            id="customNodeColour"
+            type="color"
+            value="#00e5ff"
+            title="Choose a custom colour"
+            aria-label="Choose a custom node colour"
+          />
+          <button class="custom-colour-button" id="useCustomNodeColour" type="button">
+            Use + remember custom colour
+          </button>
+        </div>
+
+        <div class="saved-colour-group">
+          <div class="saved-colour-title">Saved custom colours</div>
+          <div class="colour-swatches" id="savedNodeColours"></div>
+          <div class="saved-colours-empty" id="savedNodeColoursEmpty">
+            Your custom colours will appear here for reuse.
+          </div>
+        </div>
+
+        <div class="node-colour-style-shell">
+          <div class="node-colour-style-label">Colour style</div>
+          <div class="node-colour-style-options" id="nodeColourStyleOptions">
+            <button class="node-colour-style-option selected" id="nodeColourStyleGradient" type="button">
+              Gradient
+            </button>
+            <button class="node-colour-style-option" id="nodeColourStyleSolid" type="button">
+              Solid
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div class="field checklist-editor-shell">
+        <div class="checklist-editor-toolbar">
+          <label>Checklist</label>
+          <button class="checklist-add" id="addChecklistItem" type="button">＋ Add checkbox</button>
+        </div>
+        <div class="checklist-editor" id="checklistEditor"></div>
+        <div class="checklist-editor-empty" id="checklistEditorEmpty">
+          No checkboxes yet. Add one when this task has smaller steps.
+        </div>
+      </div>
+
       <label class="done-row">
         <input id="taskDone" name="done" type="checkbox" />
-        Mark this task as completed
+        Complete task (and all checklist items)
       </label>
 
       <div class="dialog-actions">
@@ -822,6 +1403,7 @@
       const LEGACY_STORAGE_KEY = "flowline-task-board-v1";
       const BOARD_LIBRARY_KEY = "flowline-task-board-library-v2";
       const ACTIVE_BOARD_KEY = "flowline-active-board-v2";
+      const CUSTOM_NODE_COLOURS_KEY = "flowline-custom-node-colours-v1";
 
       const defaultStages = [
         { id: "idea", name: "First stage" },
@@ -836,6 +1418,8 @@
           description: "Starting point",
           stage: "idea",
           parentId: null,
+          checklist: [],
+          nodeColor: null,
           done: false
         },
         {
@@ -844,6 +1428,8 @@
           description: "Connected follow-up",
           stage: "initial",
           parentId: "sample-1",
+          checklist: [],
+          nodeColor: null,
           done: false
         },
         {
@@ -852,6 +1438,8 @@
           description: "Connected follow-up",
           stage: "identity",
           parentId: "sample-2",
+          checklist: [],
+          nodeColor: null,
           done: false
         }
       ];
@@ -860,6 +1448,7 @@
       const shell = document.getElementById("boardShell");
       const stagesHost = document.getElementById("stagesHost");
       const connectorSvg = document.getElementById("connectors");
+      const dropIndicator = document.getElementById("dropIndicator");
 
       const taskDialog = document.getElementById("taskDialog");
       const taskForm = document.getElementById("taskForm");
@@ -867,6 +1456,17 @@
       const taskDescriptionInput = document.getElementById("taskDescription");
       const taskDoneInput = document.getElementById("taskDone");
       const stagePicker = document.getElementById("stagePicker");
+      const checklistEditor = document.getElementById("checklistEditor");
+      const checklistEditorEmpty = document.getElementById("checklistEditorEmpty");
+      const addChecklistItemButton = document.getElementById("addChecklistItem");
+      const nodeColourPresets = document.getElementById("nodeColourPresets");
+      const customNodeColour = document.getElementById("customNodeColour");
+      const useCustomNodeColourButton = document.getElementById("useCustomNodeColour");
+      const savedNodeColours = document.getElementById("savedNodeColours");
+      const savedNodeColoursEmpty = document.getElementById("savedNodeColoursEmpty");
+      const nodeColourValue = document.getElementById("nodeColourValue");
+      const nodeColourStyleGradient = document.getElementById("nodeColourStyleGradient");
+      const nodeColourStyleSolid = document.getElementById("nodeColourStyleSolid");
       const deleteTaskButton = document.getElementById("deleteTask");
       const taskDialogTitle = document.getElementById("dialogTitle");
       const taskDialogSubtitle = document.getElementById("taskDialogSubtitle");
@@ -882,18 +1482,39 @@
       let state = loadActiveBoardState();
       let editingTaskId = null;
       let creatingParentId = null;
+      let editingChecklist = [];
+      let editingNodeColour = null;
+      let editingNodeColourStyle = "gradient";
+      let savedCustomNodeColours = loadSavedCustomNodeColours();
+
+      let draggingTaskId = null;
+      let dragPointerId = null;
+      let dragStartX = 0;
+      let dragStartY = 0;
+      let dragStarted = false;
+      let dragTargetStageId = null;
+      let dragTargetIndex = null;
+
+      function cloneTask(task) {
+        return {
+          ...task,
+          checklist: Array.isArray(task.checklist)
+            ? task.checklist.map(item => ({ ...item }))
+            : []
+        };
+      }
 
       function cloneDefaults() {
         return {
           stages: defaultStages.map(stage => ({ ...stage })),
-          tasks: defaultTasks.map(task => ({ ...task }))
+          tasks: defaultTasks.map(cloneTask)
         };
       }
 
       function cloneState(value) {
         return {
           stages: value.stages.map(stage => ({ ...stage })),
-          tasks: value.tasks.map(task => ({ ...task }))
+          tasks: value.tasks.map(cloneTask)
         };
       }
 
@@ -912,6 +1533,8 @@
               description: "Starting point",
               stage: stages[0].id,
               parentId: null,
+              checklist: [],
+              nodeColor: null,
               done: false
             }
           ]
@@ -1053,6 +1676,17 @@
           const alreadyHasParentData = Object.prototype.hasOwnProperty.call(task, "parentId");
           const legacyParentId = index > 0 ? sourceTasks[index - 1].id : null;
 
+          const checklist = Array.isArray(task.checklist)
+            ? task.checklist
+                .filter(item => item && typeof item === "object")
+                .map(item => ({
+                  id: typeof item.id === "string" ? item.id : makeId("check"),
+                  text: String(item.text || "").trim(),
+                  done: Boolean(item.done)
+                }))
+                .filter(item => item.text)
+            : [];
+
           return {
             id: task.id,
             title: String(task.title || "Untitled task"),
@@ -1061,7 +1695,16 @@
             parentId: alreadyHasParentData
               ? (typeof task.parentId === "string" ? task.parentId : null)
               : legacyParentId,
-            done: Boolean(task.done)
+            checklist,
+            nodeColor: /^#[0-9a-f]{6}$/i.test(String(task.nodeColor || ""))
+              ? String(task.nodeColor).toLowerCase()
+              : null,
+            nodeColorStyle: String(task.nodeColorStyle || "gradient") === "solid"
+              ? "solid"
+              : "gradient",
+            done: checklist.length
+              ? checklist.every(item => item.done)
+              : Boolean(task.done)
           };
         });
 
@@ -1392,6 +2035,164 @@
         renderBoard();
       }
 
+      const PRESET_NODE_COLOURS = [
+        { name: "Neon pink", value: "#ff2bd6" },
+        { name: "Electric orange", value: "#ff7a00" },
+        { name: "Neon yellow", value: "#eaff00" },
+        { name: "Acid lime", value: "#39ff14" },
+        { name: "Neon mint", value: "#00f5a0" },
+        { name: "Electric cyan", value: "#00e5ff" },
+        { name: "Electric blue", value: "#2979ff" },
+        { name: "Neon violet", value: "#9b5cff" },
+        { name: "Hot red", value: "#ff365d" }
+      ];
+
+      const DEPENDENCY_COLORS = [
+        "#2f80ed",
+        "#9b51e0",
+        "#f2994a",
+        "#eb5757",
+        "#00a6a6",
+        "#d44bc3",
+        "#6c8c1d",
+        "#7a5af8",
+        "#e76f51",
+        "#118ab2",
+        "#c77800",
+        "#2a9d8f"
+      ];
+
+      function loadSavedCustomNodeColours() {
+        try {
+          const parsed = JSON.parse(
+            localStorage.getItem(CUSTOM_NODE_COLOURS_KEY) || "[]"
+          );
+
+          if (!Array.isArray(parsed)) {
+            return [];
+          }
+
+          return parsed
+            .map(value => String(value).toLowerCase())
+            .filter(value => /^#[0-9a-f]{6}$/i.test(value))
+            .filter((value, index, array) => array.indexOf(value) === index)
+            .slice(0, 16);
+        } catch (error) {
+          console.warn("Could not load saved node colours.", error);
+          return [];
+        }
+      }
+
+      function saveCustomNodeColours() {
+        try {
+          localStorage.setItem(
+            CUSTOM_NODE_COLOURS_KEY,
+            JSON.stringify(savedCustomNodeColours)
+          );
+        } catch (error) {
+          console.warn("Could not save custom node colours.", error);
+        }
+      }
+
+      function rememberCustomNodeColour(colour) {
+        const normalised = String(colour || "").toLowerCase();
+
+        if (!/^#[0-9a-f]{6}$/i.test(normalised)) {
+          return;
+        }
+
+        savedCustomNodeColours = [
+          normalised,
+          ...savedCustomNodeColours.filter(value => value !== normalised)
+        ].slice(0, 16);
+
+        saveCustomNodeColours();
+        renderNodeColourPicker();
+      }
+
+      function makeColourSwatch(colour, name, isDefault = false) {
+        const button = document.createElement("button");
+        button.className = `colour-swatch${isDefault ? " default-colour" : ""}`;
+        button.type = "button";
+        button.title = name;
+        button.setAttribute("aria-label", `Use ${name}`);
+        button.dataset.colour = colour || "";
+
+        if (colour) {
+          button.style.setProperty("--swatch", colour);
+        }
+
+        const selected = isDefault
+          ? !editingNodeColour
+          : editingNodeColour === colour;
+
+        if (selected) {
+          button.classList.add("selected");
+        }
+
+        button.addEventListener("click", () => {
+          editingNodeColour = colour || null;
+          renderNodeColourPicker();
+        });
+
+        return button;
+      }
+
+      function renderNodeColourStylePicker() {
+        nodeColourStyleGradient.classList.toggle(
+          "selected",
+          editingNodeColourStyle !== "solid"
+        );
+        nodeColourStyleSolid.classList.toggle(
+          "selected",
+          editingNodeColourStyle === "solid"
+        );
+      }
+
+      function getContrastTextColor(hexColour) {
+        const hex = String(hexColour || "").replace("#", "");
+
+        if (!/^[0-9a-f]{6}$/i.test(hex)) {
+          return "#2c312d";
+        }
+
+        const red = Number.parseInt(hex.slice(0, 2), 16);
+        const green = Number.parseInt(hex.slice(2, 4), 16);
+        const blue = Number.parseInt(hex.slice(4, 6), 16);
+        const luminance = ((red * 299) + (green * 587) + (blue * 114)) / 1000;
+
+        return luminance >= 160 ? "#2a2f2a" : "#ffffff";
+      }
+
+      function renderNodeColourPicker() {
+        nodeColourPresets.replaceChildren();
+
+        nodeColourPresets.appendChild(
+          makeColourSwatch(null, "Default colour", true)
+        );
+
+        PRESET_NODE_COLOURS.forEach(preset => {
+          nodeColourPresets.appendChild(
+            makeColourSwatch(preset.value, preset.name)
+          );
+        });
+
+        savedNodeColours.replaceChildren();
+        savedNodeColoursEmpty.hidden = savedCustomNodeColours.length > 0;
+
+        savedCustomNodeColours.forEach(colour => {
+          savedNodeColours.appendChild(
+            makeColourSwatch(colour, `Saved custom colour ${colour}`)
+          );
+        });
+
+        nodeColourValue.textContent = editingNodeColour
+          ? editingNodeColour.toUpperCase()
+          : "Default";
+
+        renderNodeColourStylePicker();
+      }
+
       function stageIndex(stageId) {
         return state.stages.findIndex(stage => stage.id === stageId);
       }
@@ -1407,27 +2208,61 @@
         board.style.gridTemplateColumns = `repeat(${state.stages.length}, minmax(${minimumStageWidth}px, 1fr))`;
         board.style.minWidth = `${Math.max(900, state.stages.length * minimumStageWidth)}px`;
 
+        const tasksByStage = new Map(
+          state.stages.map(stage => [
+            stage.id,
+            state.tasks.filter(task => task.stage === stage.id)
+          ])
+        );
+
         const stageTaskCounts = new Map(
           state.stages.map(stage => [
             stage.id,
-            state.tasks.filter(task => task.stage === stage.id).length
+            tasksByStage.get(stage.id).length
           ])
         );
-        const maximumTasksInStage = Math.max(
-          1,
-          ...stageTaskCounts.values()
-        );
+
+        const estimateTaskHeight = task => {
+          const visibleChecklistRows = Math.min(
+            Array.isArray(task.checklist) ? task.checklist.length : 0,
+            4
+          );
+          return 72 + (visibleChecklistRows * 22);
+        };
+
+        const stageContentHeights = state.stages.map(stage => {
+          const tasks = tasksByStage.get(stage.id);
+          const cardsHeight = tasks.reduce(
+            (total, task) => total + estimateTaskHeight(task),
+            0
+          );
+          const gapsHeight = Math.max(0, tasks.length - 1) * 18;
+          return cardsHeight + gapsHeight + 18;
+        });
+
         const taskGridHeight = Math.max(
           520,
-          (maximumTasksInStage * 60) +
-          (Math.max(0, maximumTasksInStage - 1) * 18) +
-          74
+          ...stageContentHeights
+        );
+
+        const crossStageEdgeCount = state.tasks.filter(task => {
+          if (!task.parentId) {
+            return false;
+          }
+          const parent = getTaskById(task.parentId);
+          return parent && parent.stage !== task.stage;
+        }).length;
+
+        const routingReserve = Math.max(
+          96,
+          58 + (crossStageEdgeCount * 8)
         );
 
         state.stages.forEach(stage => {
           const section = document.createElement("section");
           section.className = "stage";
           section.dataset.stage = stage.id;
+          section.style.paddingBottom = `${routingReserve + 32}px`;
 
           const header = document.createElement("header");
           header.className = "stage-header";
@@ -1459,6 +2294,7 @@
           const taskCount = stageTaskCounts.get(stage.id) || 0;
           grid.className = `task-grid${taskCount === 1 ? " single-task" : ""}`;
           grid.dataset.gridFor = stage.id;
+          grid.dataset.stageId = stage.id;
           grid.style.height = `${taskGridHeight}px`;
 
           section.append(header, grid);
@@ -1493,6 +2329,38 @@
         card.className = `task-card${task.done ? " done" : ""}`;
         card.dataset.taskId = task.id;
 
+        const dependencyColor = getDependencyColor(task);
+        card.style.setProperty("--dependency-color", dependencyColor);
+
+        if (task.nodeColor) {
+          card.classList.add("has-node-color");
+          card.style.setProperty("--node-color", task.nodeColor);
+          card.style.setProperty(
+            "--node-text-color",
+            getContrastTextColor(task.nodeColor)
+          );
+
+          if (task.nodeColorStyle === "solid") {
+            card.classList.add("node-color-solid");
+          }
+        }
+
+        card.addEventListener("mouseenter", () => {
+          if (!draggingTaskId) {
+            highlightTaskConnections(task.id);
+          }
+        });
+
+        card.addEventListener("mouseleave", () => {
+          if (!draggingTaskId) {
+            clearConnectionHighlight();
+          }
+        });
+
+        card.addEventListener("pointerdown", event => {
+          beginTaskDrag(event, task.id, card);
+        });
+
         const checkLabel = document.createElement("label");
         checkLabel.className = "task-check";
         checkLabel.title = task.done ? "Mark incomplete" : "Mark complete";
@@ -1503,6 +2371,13 @@
         checkbox.setAttribute("aria-label", `Mark ${task.title} complete`);
         checkbox.addEventListener("change", () => {
           task.done = checkbox.checked;
+
+          if (Array.isArray(task.checklist) && task.checklist.length) {
+            task.checklist.forEach(item => {
+              item.done = checkbox.checked;
+            });
+          }
+
           saveState();
           renderBoard();
         });
@@ -1515,16 +2390,58 @@
         const copy = document.createElement("div");
         copy.className = "task-copy";
 
+        const titleRow = document.createElement("div");
+        titleRow.className = "task-title-row";
+
         const title = document.createElement("div");
         title.className = "task-title";
         title.textContent = task.title;
         title.title = task.title;
 
+        const status = document.createElement("span");
+        status.className = `task-status ${task.done ? "done" : "wip"}`;
+        status.textContent = getTaskStatus(task);
+        status.title = task.done ? "All work complete" : "Work in progress";
+
+        titleRow.append(title, status);
+
         const description = document.createElement("div");
         description.className = "task-description";
         description.textContent = task.description || "No description";
         description.title = description.textContent;
-        copy.append(title, description);
+
+        copy.append(titleRow, description);
+
+        if (Array.isArray(task.checklist) && task.checklist.length) {
+          const checklist = document.createElement("div");
+          checklist.className = "task-checklist";
+
+          task.checklist.forEach(item => {
+            const itemLabel = document.createElement("label");
+            itemLabel.className = `task-checklist-item${item.done ? " completed" : ""}`;
+
+            const itemCheckbox = document.createElement("input");
+            itemCheckbox.type = "checkbox";
+            itemCheckbox.checked = item.done;
+            itemCheckbox.setAttribute("aria-label", `${item.text} in ${task.title}`);
+            itemCheckbox.addEventListener("change", () => {
+              item.done = itemCheckbox.checked;
+              syncTaskDoneFromChecklist(task);
+              saveState();
+              renderBoard();
+            });
+
+            const itemText = document.createElement("span");
+            itemText.className = "task-checklist-text";
+            itemText.textContent = item.text;
+            itemText.title = item.text;
+
+            itemLabel.append(itemCheckbox, itemText);
+            checklist.appendChild(itemLabel);
+          });
+
+          copy.appendChild(checklist);
+        }
 
         const actions = document.createElement("div");
         actions.className = "task-actions";
@@ -1585,6 +2502,77 @@
 
       function getTaskById(taskId) {
         return state.tasks.find(task => task.id === taskId) || null;
+      }
+
+      function getFirstStageDependencyRoots() {
+        const firstStageId = state.stages[0]?.id;
+        if (!firstStageId) {
+          return [];
+        }
+
+        return state.tasks.filter(task => {
+          if (task.stage !== firstStageId) {
+            return false;
+          }
+
+          const parent = task.parentId ? getTaskById(task.parentId) : null;
+          return !parent || parent.stage !== firstStageId;
+        });
+      }
+
+      function getDependencyRootTask(task) {
+        if (!task) {
+          return null;
+        }
+
+        const firstStageId = state.stages[0]?.id;
+        if (!firstStageId) {
+          return task;
+        }
+
+        const visited = new Set();
+        let current = task;
+        let firstStageCandidate = null;
+
+        while (current && !visited.has(current.id)) {
+          visited.add(current.id);
+
+          if (current.stage === firstStageId) {
+            firstStageCandidate = current;
+          }
+
+          current = current.parentId ? getTaskById(current.parentId) : null;
+        }
+
+        return firstStageCandidate || task;
+      }
+
+      function getDependencyColor(task) {
+        const root = getDependencyRootTask(task);
+        if (!root) {
+          return DEPENDENCY_COLORS[0];
+        }
+
+        const roots = getFirstStageDependencyRoots();
+        const rootIndex = roots.findIndex(item => item.id === root.id);
+        const fallbackIndex = Math.max(0, state.tasks.findIndex(item => item.id === root.id));
+        const index = rootIndex >= 0 ? rootIndex : fallbackIndex;
+
+        return DEPENDENCY_COLORS[index % DEPENDENCY_COLORS.length];
+      }
+
+      function syncTaskDoneFromChecklist(task) {
+        if (!task) {
+          return;
+        }
+
+        if (Array.isArray(task.checklist) && task.checklist.length) {
+          task.done = task.checklist.every(item => item.done);
+        }
+      }
+
+      function getTaskStatus(task) {
+        return task.done ? "Done" : "WIP";
       }
 
       function getNextFollowUpTitle() {
@@ -1663,6 +2651,71 @@
         return parentTask;
       }
 
+      function renderChecklistEditor(focusItemId = null) {
+        checklistEditor.replaceChildren();
+        checklistEditorEmpty.hidden = editingChecklist.length > 0;
+
+        editingChecklist.forEach(item => {
+          const row = document.createElement("div");
+          row.className = "checklist-editor-row";
+
+          const checkbox = document.createElement("input");
+          checkbox.type = "checkbox";
+          checkbox.checked = item.done;
+          checkbox.setAttribute("aria-label", `Complete ${item.text || "checklist item"}`);
+          checkbox.addEventListener("change", () => {
+            item.done = checkbox.checked;
+            taskDoneInput.checked = editingChecklist.length > 0 &&
+              editingChecklist.every(checkItem => checkItem.done);
+          });
+
+          const input = document.createElement("input");
+          input.className = "checklist-item-input";
+          input.type = "text";
+          input.maxLength = 120;
+          input.value = item.text;
+          input.placeholder = "Checklist item";
+          input.addEventListener("input", () => {
+            item.text = input.value;
+          });
+
+          const remove = document.createElement("button");
+          remove.className = "checklist-remove";
+          remove.type = "button";
+          remove.textContent = "×";
+          remove.title = "Remove checkbox";
+          remove.setAttribute("aria-label", "Remove checklist item");
+          remove.addEventListener("click", () => {
+            editingChecklist = editingChecklist.filter(checkItem => checkItem.id !== item.id);
+
+            if (editingChecklist.length) {
+              taskDoneInput.checked = editingChecklist.every(checkItem => checkItem.done);
+            }
+
+            renderChecklistEditor();
+          });
+
+          row.append(checkbox, input, remove);
+          checklistEditor.appendChild(row);
+
+          if (item.id === focusItemId) {
+            requestAnimationFrame(() => input.focus());
+          }
+        });
+      }
+
+      function addChecklistItem() {
+        const item = {
+          id: makeId("check"),
+          text: "",
+          done: false
+        };
+
+        editingChecklist.push(item);
+        taskDoneInput.checked = false;
+        renderChecklistEditor(item.id);
+      }
+
       function openTaskDialog(taskId = null, parentId = null) {
         editingTaskId = taskId;
         creatingParentId = taskId ? null : parentId;
@@ -1705,7 +2758,16 @@
         deleteTaskButton.hidden = !existing;
         taskTitleInput.value = existing?.title || (parentTask ? getNextFollowUpTitle() : "");
         taskDescriptionInput.value = existing?.description || "";
+        editingChecklist = Array.isArray(existing?.checklist)
+          ? existing.checklist.map(item => ({ ...item }))
+          : [];
+        editingNodeColour = existing?.nodeColor || null;
+        editingNodeColourStyle = existing?.nodeColorStyle === "solid"
+          ? "solid"
+          : "gradient";
         taskDoneInput.checked = Boolean(existing?.done);
+        renderChecklistEditor();
+        renderNodeColourPicker();
         renderStagePicker(defaultStageId);
 
         taskDialog.showModal();
@@ -1715,6 +2777,10 @@
       function closeTaskDialog() {
         editingTaskId = null;
         creatingParentId = null;
+        editingChecklist = [];
+        editingNodeColour = null;
+        editingNodeColourStyle = "gradient";
+        checklistEditor.replaceChildren();
         taskForm.reset();
         taskDialog.close();
       }
@@ -1868,27 +2934,247 @@
         connectorSvg.setAttribute("width", String(board.scrollWidth));
         connectorSvg.setAttribute("height", String(board.scrollHeight));
 
-        state.tasks.forEach(toTask => {
-          if (!toTask.parentId) {
-            return;
+        const taskRects = new Map();
+        const stageRects = new Map();
+
+        state.stages.forEach(stage => {
+          const stageElement = stagesHost.querySelector(
+            `[data-stage="${CSS.escape(stage.id)}"]`
+          );
+          if (stageElement) {
+            stageRects.set(stage.id, stageElement.getBoundingClientRect());
+          }
+        });
+
+        state.tasks.forEach(task => {
+          const element = board.querySelector(
+            `[data-task-id="${CSS.escape(task.id)}"]`
+          );
+          if (element) {
+            taskRects.set(task.id, element.getBoundingClientRect());
+          }
+        });
+
+        const edges = state.tasks
+          .filter(toTask => Boolean(toTask.parentId))
+          .map(toTask => {
+            const fromTask = getRenderedSourceTask(toTask);
+            if (!fromTask) {
+              return null;
+            }
+
+            const fromRect = taskRects.get(fromTask.id);
+            const toRect = taskRects.get(toTask.id);
+
+            if (!fromRect || !toRect) {
+              return null;
+            }
+
+            return {
+              id: `${fromTask.id}->${toTask.id}`,
+              fromTask,
+              toTask,
+              fromRect,
+              toRect,
+              fromStageIndex: stageIndex(fromTask.stage),
+              toStageIndex: stageIndex(toTask.stage),
+              color: getDependencyColor(toTask),
+              familyId: getDependencyRootTask(toTask)?.id || fromTask.id,
+              logicalParentId: toTask.parentId,
+              sourceSlot: 0,
+              sourceCount: 1,
+              targetSlot: 0,
+              targetCount: 1,
+              boundaryLaneSlot: 0,
+              boundaryLaneCount: 1,
+              busSlot: 0
+            };
+          })
+          .filter(Boolean);
+
+        const spreadOffset = (slot, count, maximum = 24) => {
+          if (count <= 1) {
+            return 0;
           }
 
-          const fromTask = getRenderedSourceTask(toTask);
-          if (!fromTask) {
-            return;
-          }
+          const spacing = Math.min(
+            10,
+            (maximum * 2) / Math.max(1, count - 1)
+          );
 
-          const from = board.querySelector(`[data-task-id="${CSS.escape(fromTask.id)}"]`);
-          const to = board.querySelector(`[data-task-id="${CSS.escape(toTask.id)}"]`);
+          return (slot - ((count - 1) / 2)) * spacing;
+        };
 
-          if (!from || !to) {
-            return;
-          }
+        const groupEdges = (keyFunction, filterFunction = () => true) => {
+          const groups = new Map();
 
-          const a = from.getBoundingClientRect();
-          const b = to.getBoundingClientRect();
-          const fromStageIndex = stageIndex(fromTask.stage);
-          const toStageIndex = stageIndex(toTask.stage);
+          edges.filter(filterFunction).forEach(edge => {
+            const key = keyFunction(edge);
+            if (!groups.has(key)) {
+              groups.set(key, []);
+            }
+            groups.get(key).push(edge);
+          });
+
+          return groups;
+        };
+
+        const sourceGroups = groupEdges(edge => edge.fromTask.id);
+        sourceGroups.forEach(group => {
+          group.sort((left, right) =>
+            (left.toStageIndex - right.toStageIndex) ||
+            (left.toRect.top - right.toRect.top)
+          );
+          group.forEach((edge, index) => {
+            edge.sourceSlot = index;
+            edge.sourceCount = group.length;
+          });
+        });
+
+        const targetGroups = groupEdges(edge => edge.toTask.id);
+        targetGroups.forEach(group => {
+          group.sort((left, right) => left.fromRect.top - right.fromRect.top);
+          group.forEach((edge, index) => {
+            edge.targetSlot = index;
+            edge.targetCount = group.length;
+          });
+        });
+
+        const adjacentBoundaryGroups = groupEdges(
+          edge => `${Math.min(edge.fromStageIndex, edge.toStageIndex)}:${Math.max(edge.fromStageIndex, edge.toStageIndex)}`,
+          edge => Math.abs(edge.toStageIndex - edge.fromStageIndex) === 1
+        );
+
+        adjacentBoundaryGroups.forEach(boundaryEdges => {
+          const familyGroups = new Map();
+
+          boundaryEdges.forEach(edge => {
+            if (!familyGroups.has(edge.familyId)) {
+              familyGroups.set(edge.familyId, []);
+            }
+            familyGroups.get(edge.familyId).push(edge);
+          });
+
+          const orderedFamilies = Array.from(familyGroups.entries())
+            .sort((leftEntry, rightEntry) => {
+              const leftRoot = taskRects.get(leftEntry[0]);
+              const rightRoot = taskRects.get(rightEntry[0]);
+
+              return (leftRoot?.top || 0) - (rightRoot?.top || 0);
+            });
+
+          let laneCursor = 0;
+
+          orderedFamilies.forEach(([, familyEdges]) => {
+            familyEdges.sort((left, right) =>
+              (left.fromRect.top + left.toRect.top) -
+              (right.fromRect.top + right.toRect.top)
+            );
+
+            familyEdges.forEach(edge => {
+              edge.boundaryLaneSlot = laneCursor;
+              edge.boundaryLaneCount = boundaryEdges.length;
+              laneCursor += 1;
+            });
+          });
+        });
+
+        const longRangeEdges = edges
+          .filter(edge => Math.abs(edge.toStageIndex - edge.fromStageIndex) > 1)
+          .sort((left, right) =>
+            (left.fromStageIndex - right.fromStageIndex) ||
+            (left.toStageIndex - right.toStageIndex) ||
+            (left.fromRect.top - right.fromRect.top)
+          );
+
+        longRangeEdges.forEach((edge, index) => {
+          edge.busSlot = index;
+        });
+
+        const firstGrid = state.stages.length
+          ? getGrid(state.stages[0].id)
+          : null;
+        const firstGridRect = firstGrid?.getBoundingClientRect();
+        const busBaseY = firstGridRect
+          ? firstGridRect.bottom - boardRect.top + 22
+          : board.scrollHeight - 80;
+
+        const cardIntersectsVerticalPath = (edge, x, y1, y2) => {
+          const top = Math.min(y1, y2);
+          const bottom = Math.max(y1, y2);
+
+          return state.tasks.some(task => {
+            if (
+              task.id === edge.fromTask.id ||
+              task.id === edge.toTask.id ||
+              task.stage !== edge.fromTask.stage
+            ) {
+              return false;
+            }
+
+            const rect = taskRects.get(task.id);
+            if (!rect) {
+              return false;
+            }
+
+            const left = rect.left - boardRect.left - 3;
+            const right = rect.right - boardRect.left + 3;
+            const rectTop = rect.top - boardRect.top - 3;
+            const rectBottom = rect.bottom - boardRect.top + 3;
+
+            return x >= left &&
+              x <= right &&
+              bottom >= rectTop &&
+              top <= rectBottom;
+          });
+        };
+
+        const createConnector = (edge, pathData, startX, startY, endX, endY) => {
+          const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+          path.setAttribute("class", "connector");
+          path.setAttribute("d", pathData);
+          path.dataset.fromTaskId = edge.fromTask.id;
+          path.dataset.toTaskId = edge.toTask.id;
+          path.dataset.logicalParentId = edge.logicalParentId || "";
+          path.dataset.familyId = edge.familyId;
+          path.style.setProperty("--edge-color", edge.color);
+
+          const startDot = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+          startDot.setAttribute("class", "connector-dot");
+          startDot.dataset.fromTaskId = edge.fromTask.id;
+          startDot.dataset.toTaskId = edge.toTask.id;
+          startDot.dataset.logicalParentId = edge.logicalParentId || "";
+          startDot.dataset.familyId = edge.familyId;
+          startDot.setAttribute("cx", String(startX));
+          startDot.setAttribute("cy", String(startY));
+          startDot.setAttribute("r", "2.5");
+          startDot.style.setProperty("--edge-color", edge.color);
+
+          const endDot = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+          endDot.setAttribute("class", "connector-dot");
+          endDot.dataset.fromTaskId = edge.fromTask.id;
+          endDot.dataset.toTaskId = edge.toTask.id;
+          endDot.dataset.logicalParentId = edge.logicalParentId || "";
+          endDot.dataset.familyId = edge.familyId;
+          endDot.setAttribute("cx", String(endX));
+          endDot.setAttribute("cy", String(endY));
+          endDot.setAttribute("r", "2.5");
+          endDot.style.setProperty("--edge-color", edge.color);
+
+          connectorSvg.append(path, startDot, endDot);
+        };
+
+        edges.forEach(edge => {
+          const a = edge.fromRect;
+          const b = edge.toRect;
+          const sourcePortOffset = spreadOffset(
+            edge.sourceSlot,
+            edge.sourceCount
+          );
+          const targetPortOffset = spreadOffset(
+            edge.targetSlot,
+            edge.targetCount
+          );
 
           let startX;
           let startY;
@@ -1896,49 +3182,489 @@
           let endY;
           let pathData;
 
-          if (toStageIndex > fromStageIndex) {
-            startX = a.right - boardRect.left;
-            startY = a.top - boardRect.top + a.height / 2;
-            endX = b.left - boardRect.left;
-            endY = b.top - boardRect.top + b.height / 2;
-            const middleX = startX + Math.max(18, (endX - startX) * 0.5);
-            pathData = `M ${startX} ${startY} H ${middleX} V ${endY} H ${endX}`;
-          } else if (toStageIndex === fromStageIndex) {
+          if (edge.toStageIndex === edge.fromStageIndex) {
+            const targetBelow = b.top >= a.top;
             const overlapLeft = Math.max(a.left, b.left);
             const overlapRight = Math.min(a.right, b.right);
             const verticalX = ((overlapLeft + overlapRight) / 2) - boardRect.left;
+
             startX = verticalX;
-            startY = a.bottom - boardRect.top;
+            startY = targetBelow
+              ? a.bottom - boardRect.top
+              : a.top - boardRect.top;
             endX = verticalX;
-            endY = b.top - boardRect.top;
-            pathData = `M ${startX} ${startY} V ${endY}`;
+            endY = targetBelow
+              ? b.top - boardRect.top
+              : b.bottom - boardRect.top;
+
+            const hasSiblingBranch = edge.sourceCount > 1;
+            const blocked = cardIntersectsVerticalPath(
+              edge,
+              verticalX,
+              startY,
+              endY
+            );
+
+            if (!blocked && !hasSiblingBranch) {
+              pathData = `M ${startX} ${startY} V ${endY}`;
+            } else {
+              const stageRect = stageRects.get(edge.fromTask.stage);
+              const gutterRight = stageRect
+                ? stageRect.right - boardRect.left - 8
+                : a.right - boardRect.left + 18;
+
+              const gutterX = Math.max(
+                a.right - boardRect.left + 6,
+                gutterRight - Math.max(0, edge.sourceSlot) * 5
+              );
+
+              const sourceOutsideY = targetBelow ? startY + 7 : startY - 7;
+              const targetOutsideY = targetBelow ? endY - 7 : endY + 7;
+
+              pathData =
+                `M ${startX} ${startY} ` +
+                `V ${sourceOutsideY} ` +
+                `H ${gutterX} ` +
+                `V ${targetOutsideY} ` +
+                `H ${endX} ` +
+                `V ${endY}`;
+            }
+          } else if (Math.abs(edge.toStageIndex - edge.fromStageIndex) === 1) {
+            const movingRight = edge.toStageIndex > edge.fromStageIndex;
+
+            startX = movingRight
+              ? a.right - boardRect.left
+              : a.left - boardRect.left;
+            startY = a.top - boardRect.top + (a.height / 2) + sourcePortOffset;
+
+            endX = movingRight
+              ? b.left - boardRect.left
+              : b.right - boardRect.left;
+            endY = b.top - boardRect.top + (b.height / 2) + targetPortOffset;
+
+            const gapLeft = Math.min(startX, endX);
+            const gapRight = Math.max(startX, endX);
+            const routeLeft = gapLeft + 7;
+            const routeRight = gapRight - 7;
+            const routeWidth = Math.max(8, routeRight - routeLeft);
+            const laneFraction = (edge.boundaryLaneSlot + 1) /
+              (edge.boundaryLaneCount + 1);
+            const laneX = routeLeft + (routeWidth * laneFraction);
+
+            pathData =
+              `M ${startX} ${startY} ` +
+              `H ${laneX} ` +
+              `V ${endY} ` +
+              `H ${endX}`;
           } else {
-            startX = a.left - boardRect.left;
-            startY = a.top - boardRect.top + a.height / 2;
-            endX = b.right - boardRect.left;
-            endY = b.top - boardRect.top + b.height / 2;
-            const loopX = Math.min(startX, endX) - 24;
-            pathData = `M ${startX} ${startY} H ${loopX} V ${endY} H ${endX}`;
+            const movingRight = edge.toStageIndex > edge.fromStageIndex;
+            const fromStageRect = stageRects.get(edge.fromTask.stage);
+            const toStageRect = stageRects.get(edge.toTask.stage);
+
+            startX = movingRight
+              ? a.right - boardRect.left
+              : a.left - boardRect.left;
+            startY = a.top - boardRect.top + (a.height / 2) + sourcePortOffset;
+
+            endX = movingRight
+              ? b.left - boardRect.left
+              : b.right - boardRect.left;
+            endY = b.top - boardRect.top + (b.height / 2) + targetPortOffset;
+
+            const sourceAvailableStart = movingRight
+              ? startX + 5
+              : (fromStageRect?.left - boardRect.left || startX - 24) + 5;
+            const sourceAvailableEnd = movingRight
+              ? (fromStageRect?.right - boardRect.left || startX + 24) - 5
+              : startX - 5;
+
+            const targetAvailableStart = movingRight
+              ? (toStageRect?.left - boardRect.left || endX - 24) + 5
+              : endX + 5;
+            const targetAvailableEnd = movingRight
+              ? endX - 5
+              : (toStageRect?.right - boardRect.left || endX + 24) - 5;
+
+            const sourceFraction = (edge.sourceSlot + 1) / (edge.sourceCount + 1);
+            const targetFraction = (edge.targetSlot + 1) / (edge.targetCount + 1);
+
+            const sourceGutterX = sourceAvailableStart +
+              ((sourceAvailableEnd - sourceAvailableStart) * sourceFraction);
+            const targetGutterX = targetAvailableStart +
+              ((targetAvailableEnd - targetAvailableStart) * targetFraction);
+
+            const busY = busBaseY + (edge.busSlot * 8);
+
+            pathData =
+              `M ${startX} ${startY} ` +
+              `H ${sourceGutterX} ` +
+              `V ${busY} ` +
+              `H ${targetGutterX} ` +
+              `V ${endY} ` +
+              `H ${endX}`;
           }
 
-          const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
-          path.setAttribute("class", "connector");
-          path.setAttribute("d", pathData);
-
-          const startDot = document.createElementNS("http://www.w3.org/2000/svg", "circle");
-          startDot.setAttribute("class", "connector-dot");
-          startDot.setAttribute("cx", String(startX));
-          startDot.setAttribute("cy", String(startY));
-          startDot.setAttribute("r", "2");
-
-          const endDot = document.createElementNS("http://www.w3.org/2000/svg", "circle");
-          endDot.setAttribute("class", "connector-dot");
-          endDot.setAttribute("cx", String(endX));
-          endDot.setAttribute("cy", String(endY));
-          endDot.setAttribute("r", "2");
-
-          connectorSvg.append(path, startDot, endDot);
+          createConnector(
+            edge,
+            pathData,
+            startX,
+            startY,
+            endX,
+            endY
+          );
         });
+      }
+
+      function isInteractiveDragTarget(target) {
+        return Boolean(
+          target.closest(
+            "button, input, textarea, select, label, a, .task-checklist, .task-actions"
+          )
+        );
+      }
+
+      function getStageAtClientX(clientX) {
+        const stageElements = Array.from(
+          stagesHost.querySelectorAll(".stage")
+        );
+
+        if (!stageElements.length) {
+          return null;
+        }
+
+        let nearest = null;
+        let nearestDistance = Infinity;
+
+        stageElements.forEach(stageElement => {
+          const rect = stageElement.getBoundingClientRect();
+
+          if (clientX >= rect.left && clientX <= rect.right) {
+            nearest = stageElement;
+            nearestDistance = 0;
+            return;
+          }
+
+          const distance = clientX < rect.left
+            ? rect.left - clientX
+            : clientX - rect.right;
+
+          if (distance < nearestDistance) {
+            nearest = stageElement;
+            nearestDistance = distance;
+          }
+        });
+
+        return nearest;
+      }
+
+      function getDropIndexForStage(stageId, clientY) {
+        const cards = Array.from(
+          board.querySelectorAll(
+            `[data-grid-for="${CSS.escape(stageId)}"] .task-card`
+          )
+        ).filter(card => card.dataset.taskId !== draggingTaskId);
+
+        if (!cards.length) {
+          return 0;
+        }
+
+        for (let index = 0; index < cards.length; index += 1) {
+          const rect = cards[index].getBoundingClientRect();
+          const midpoint = rect.top + (rect.height / 2);
+
+          if (clientY < midpoint) {
+            return index;
+          }
+        }
+
+        return cards.length;
+      }
+
+      function positionDropIndicator(stageId, dropIndex) {
+        const grid = getGrid(stageId);
+
+        if (!grid) {
+          dropIndicator.classList.remove("visible");
+          return;
+        }
+
+        const boardRect = board.getBoundingClientRect();
+        const gridRect = grid.getBoundingClientRect();
+
+        const cards = Array.from(
+          grid.querySelectorAll(".task-card")
+        ).filter(card => card.dataset.taskId !== draggingTaskId);
+
+        let y;
+
+        if (!cards.length) {
+          y = gridRect.top + (gridRect.height / 2);
+        } else if (dropIndex <= 0) {
+          y = cards[0].getBoundingClientRect().top - 7;
+        } else if (dropIndex >= cards.length) {
+          y = cards[cards.length - 1].getBoundingClientRect().bottom + 7;
+        } else {
+          const previousRect = cards[dropIndex - 1].getBoundingClientRect();
+          const nextRect = cards[dropIndex].getBoundingClientRect();
+          y = (previousRect.bottom + nextRect.top) / 2;
+        }
+
+        dropIndicator.style.left = `${gridRect.left - boardRect.left + 8}px`;
+        dropIndicator.style.width = `${Math.max(20, gridRect.width - 16)}px`;
+        dropIndicator.style.top = `${y - boardRect.top}px`;
+        dropIndicator.classList.add("visible");
+      }
+
+      function clearDragStageHighlights() {
+        stagesHost
+          .querySelectorAll(".task-grid")
+          .forEach(grid => {
+            grid.classList.remove("drag-active", "drop-target");
+          });
+      }
+
+      function updateTaskDrag(clientX, clientY) {
+        if (!draggingTaskId) {
+          return;
+        }
+
+        const stageElement = getStageAtClientX(clientX);
+
+        if (!stageElement) {
+          return;
+        }
+
+        const stageId = stageElement.dataset.stage;
+        const dropIndex = getDropIndexForStage(stageId, clientY);
+
+        dragTargetStageId = stageId;
+        dragTargetIndex = dropIndex;
+
+        clearDragStageHighlights();
+
+        stagesHost
+          .querySelectorAll(".task-grid")
+          .forEach(grid => grid.classList.add("drag-active"));
+
+        const targetGrid = getGrid(stageId);
+        targetGrid?.classList.add("drop-target");
+
+        positionDropIndicator(stageId, dropIndex);
+      }
+
+      function reorderTaskIntoStage(taskId, targetStageId, targetIndex) {
+        const movingTask = getTaskById(taskId);
+
+        if (!movingTask) {
+          return;
+        }
+
+        const oldStageId = movingTask.stage;
+
+        const remainingTasks = state.tasks.filter(task => task.id !== taskId);
+        const targetStageTasks = remainingTasks.filter(
+          task => task.stage === targetStageId
+        );
+
+        const boundedIndex = Math.max(
+          0,
+          Math.min(targetIndex, targetStageTasks.length)
+        );
+
+        movingTask.stage = targetStageId;
+
+        const rebuilt = [];
+        let inserted = false;
+        let targetSeen = 0;
+
+        remainingTasks.forEach(task => {
+          if (
+            !inserted &&
+            task.stage === targetStageId &&
+            targetSeen === boundedIndex
+          ) {
+            rebuilt.push(movingTask);
+            inserted = true;
+          }
+
+          rebuilt.push(task);
+
+          if (task.stage === targetStageId) {
+            targetSeen += 1;
+          }
+        });
+
+        if (!inserted) {
+          rebuilt.push(movingTask);
+        }
+
+        state.tasks = rebuilt;
+
+        saveState();
+        renderBoard();
+
+        if (oldStageId !== targetStageId) {
+          requestAnimationFrame(drawConnectors);
+        }
+      }
+
+      function finishTaskDrag(cancelled = false) {
+        const taskId = draggingTaskId;
+
+        if (!taskId) {
+          return;
+        }
+
+        const draggedCard = board.querySelector(
+          `[data-task-id="${CSS.escape(taskId)}"]`
+        );
+
+        draggedCard?.classList.remove("dragging");
+
+        if (dragPointerId !== null && draggedCard?.hasPointerCapture?.(dragPointerId)) {
+          try {
+            draggedCard.releasePointerCapture(dragPointerId);
+          } catch (error) {
+            // Pointer may already have been released by the browser.
+          }
+        }
+
+        document.body.classList.remove("node-dragging");
+        dropIndicator.classList.remove("visible");
+        clearDragStageHighlights();
+        clearConnectionHighlight();
+
+        if (
+          !cancelled &&
+          dragStarted &&
+          dragTargetStageId !== null &&
+          dragTargetIndex !== null
+        ) {
+          reorderTaskIntoStage(
+            taskId,
+            dragTargetStageId,
+            dragTargetIndex
+          );
+        }
+
+        draggingTaskId = null;
+        dragPointerId = null;
+        dragStarted = false;
+        dragTargetStageId = null;
+        dragTargetIndex = null;
+      }
+
+      function beginTaskDrag(event, taskId, card) {
+        if (
+          event.button !== 0 ||
+          isInteractiveDragTarget(event.target)
+        ) {
+          return;
+        }
+
+        draggingTaskId = taskId;
+        dragPointerId = event.pointerId;
+        dragStartX = event.clientX;
+        dragStartY = event.clientY;
+        dragStarted = false;
+        dragTargetStageId = null;
+        dragTargetIndex = null;
+
+        card.setPointerCapture?.(event.pointerId);
+
+        const handleMove = moveEvent => {
+          if (
+            moveEvent.pointerId !== dragPointerId ||
+            draggingTaskId !== taskId
+          ) {
+            return;
+          }
+
+          const distance = Math.hypot(
+            moveEvent.clientX - dragStartX,
+            moveEvent.clientY - dragStartY
+          );
+
+          if (!dragStarted && distance < 6) {
+            return;
+          }
+
+          if (!dragStarted) {
+            dragStarted = true;
+            card.classList.add("dragging");
+            document.body.classList.add("node-dragging");
+            clearConnectionHighlight();
+          }
+
+          moveEvent.preventDefault();
+          updateTaskDrag(moveEvent.clientX, moveEvent.clientY);
+        };
+
+        const handleUp = upEvent => {
+          if (upEvent.pointerId !== dragPointerId) {
+            return;
+          }
+
+          card.removeEventListener("pointermove", handleMove);
+          card.removeEventListener("pointerup", handleUp);
+          card.removeEventListener("pointercancel", handleCancel);
+
+          finishTaskDrag(false);
+        };
+
+        const handleCancel = cancelEvent => {
+          if (cancelEvent.pointerId !== dragPointerId) {
+            return;
+          }
+
+          card.removeEventListener("pointermove", handleMove);
+          card.removeEventListener("pointerup", handleUp);
+          card.removeEventListener("pointercancel", handleCancel);
+
+          finishTaskDrag(true);
+        };
+
+        card.addEventListener("pointermove", handleMove);
+        card.addEventListener("pointerup", handleUp);
+        card.addEventListener("pointercancel", handleCancel);
+      }
+
+      function clearConnectionHighlight() {
+        connectorSvg
+          .querySelectorAll(".connector, .connector-dot")
+          .forEach(element => {
+            element.classList.remove("is-direct", "is-family", "is-dimmed");
+          });
+      }
+
+      function highlightTaskConnections(taskId) {
+        const task = getTaskById(taskId);
+        if (!task) {
+          return;
+        }
+
+        const familyId = getDependencyRootTask(task)?.id || task.id;
+
+        connectorSvg
+          .querySelectorAll(".connector, .connector-dot")
+          .forEach(element => {
+            const direct =
+              element.dataset.fromTaskId === taskId ||
+              element.dataset.toTaskId === taskId ||
+              element.dataset.logicalParentId === taskId;
+
+            const sameFamily = element.dataset.familyId === familyId;
+
+            element.classList.remove("is-direct", "is-family", "is-dimmed");
+
+            if (direct) {
+              element.classList.add("is-direct");
+            } else if (sameFamily) {
+              element.classList.add("is-family");
+            } else {
+              element.classList.add("is-dimmed");
+            }
+          });
       }
 
       boardSelect.addEventListener("change", () => switchBoard(boardSelect.value));
@@ -1952,11 +3678,56 @@
       document.getElementById("renameBoard").addEventListener("click", renameActiveBoard);
       document.getElementById("deleteBoard").addEventListener("click", deleteActiveBoard);
 
+      board.addEventListener("click", event => {
+        if (dragStarted) {
+          event.preventDefault();
+          event.stopPropagation();
+        }
+      }, true);
+
       document.getElementById("addTask").addEventListener("click", () => openTaskDialog());
       document.getElementById("manageStages").addEventListener("click", () => openStageDialog());
       document.getElementById("addStage").addEventListener("click", addStage);
       document.getElementById("closeStageDialog").addEventListener("click", closeStageDialog);
       document.getElementById("cancelTaskDialog").addEventListener("click", closeTaskDialog);
+      addChecklistItemButton.addEventListener("click", addChecklistItem);
+
+      useCustomNodeColourButton.addEventListener("click", () => {
+        const colour = String(customNodeColour.value || "").toLowerCase();
+
+        if (!/^#[0-9a-f]{6}$/i.test(colour)) {
+          return;
+        }
+
+        editingNodeColour = colour;
+        rememberCustomNodeColour(colour);
+      });
+
+      customNodeColour.addEventListener("input", () => {
+        editingNodeColour = String(customNodeColour.value || "").toLowerCase();
+        renderNodeColourPicker();
+      });
+
+      nodeColourStyleGradient.addEventListener("click", () => {
+        editingNodeColourStyle = "gradient";
+        renderNodeColourStylePicker();
+      });
+
+      nodeColourStyleSolid.addEventListener("click", () => {
+        editingNodeColourStyle = "solid";
+        renderNodeColourStylePicker();
+      });
+
+      taskDoneInput.addEventListener("change", () => {
+        if (!editingChecklist.length) {
+          return;
+        }
+
+        editingChecklist.forEach(item => {
+          item.done = taskDoneInput.checked;
+        });
+        renderChecklistEditor();
+      });
 
       deleteTaskButton.addEventListener("click", () => {
         if (!editingTaskId) {
@@ -1993,13 +3764,34 @@
           return;
         }
 
+        const checklist = editingChecklist
+          .map(item => ({
+            id: item.id || makeId("check"),
+            text: String(item.text || "").trim(),
+            done: Boolean(item.done)
+          }))
+          .filter(item => item.text);
+
+        if (taskDoneInput.checked && checklist.length) {
+          checklist.forEach(item => {
+            item.done = true;
+          });
+        }
+
+        const automaticDone = checklist.length
+          ? checklist.every(item => item.done)
+          : taskDoneInput.checked;
+
         if (editingTaskId) {
           const task = state.tasks.find(item => item.id === editingTaskId);
           if (task) {
             task.title = title;
             task.description = description;
             task.stage = validStageId;
-            task.done = taskDoneInput.checked;
+            task.checklist = checklist;
+            task.nodeColor = editingNodeColour;
+            task.nodeColorStyle = editingNodeColourStyle;
+            task.done = automaticDone;
           }
         } else {
           state.tasks.push({
@@ -2008,7 +3800,10 @@
             description,
             stage: validStageId,
             parentId: resolveParentIdForNewTask(creatingParentId, validStageId),
-            done: taskDoneInput.checked
+            checklist,
+            nodeColor: editingNodeColour,
+            nodeColorStyle: editingNodeColourStyle,
+            done: automaticDone
           });
         }
 
@@ -2045,6 +3840,12 @@
         state = cloneDefaults();
         saveState();
         renderBoard();
+      });
+
+      window.addEventListener("keydown", event => {
+        if (event.key === "Escape" && draggingTaskId) {
+          finishTaskDrag(true);
+        }
       });
 
       window.addEventListener("resize", () => requestAnimationFrame(drawConnectors));
