@@ -259,6 +259,28 @@
       background: rgba(242, 242, 239, 0.43);
     }
 
+    .stage.has-stage-color {
+      background:
+        linear-gradient(
+          180deg,
+          color-mix(in srgb, var(--stage-color) 10%, rgba(249, 249, 247, 0.92)) 0%,
+          color-mix(in srgb, var(--stage-color) 5%, rgba(249, 249, 247, 0.82)) 52%,
+          color-mix(in srgb, var(--stage-color) 2.5%, rgba(249, 249, 247, 0.72)) 100%
+        );
+      box-shadow:
+        inset 0 3px 0 color-mix(in srgb, var(--stage-color) 58%, transparent);
+    }
+
+    .stage.has-stage-color .stage-label {
+      border-color: color-mix(in srgb, var(--stage-color) 28%, rgba(70, 76, 70, 0.10));
+      background: color-mix(in srgb, var(--stage-color) 9%, rgba(255, 255, 255, 0.88));
+      color: color-mix(in srgb, var(--stage-color) 42%, #686d68);
+    }
+
+    .stage.has-stage-color .stage-count {
+      color: color-mix(in srgb, var(--stage-color) 40%, #a6aba6);
+    }
+
     .stage:last-child {
       border-right: 0;
     }
@@ -615,6 +637,13 @@
       border: 1px solid rgba(18, 183, 106, 0.34);
       background: #dff9eb;
       color: #07854b;
+    }
+
+    .task-status.blocked {
+      border: 1px solid rgba(232, 63, 63, 0.36);
+      background: #ffe4e4;
+      color: #c52222;
+      box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.50);
     }
 
     .task-checklist {
@@ -1170,6 +1199,64 @@
       gap: 4px;
     }
 
+    .stage-colour-controls {
+      grid-column: 2 / -1;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 5px;
+      padding: 1px 0 2px;
+    }
+
+    .stage-colour-caption {
+      margin-right: 2px;
+      color: #a1a6a1;
+      font-size: 9px;
+      font-weight: 650;
+    }
+
+    .stage-colour-swatch {
+      position: relative;
+      display: grid;
+      width: 22px;
+      height: 22px;
+      place-items: center;
+      padding: 0;
+      border: 2px solid transparent;
+      border-radius: 7px;
+      background: var(--stage-swatch, #f2f2ef);
+      box-shadow: inset 0 0 0 1px rgba(40, 44, 40, 0.08);
+      cursor: pointer;
+    }
+
+    .stage-colour-swatch:hover {
+      transform: translateY(-1px);
+    }
+
+    .stage-colour-swatch.selected {
+      border-color: #505550;
+    }
+
+    .stage-colour-swatch.default-stage-colour {
+      background:
+        linear-gradient(
+          135deg,
+          #f2f2ef 0 44%,
+          #c6cbc7 44% 50%,
+          #ffffff 50% 100%
+        );
+    }
+
+    .stage-custom-colour {
+      width: 28px;
+      height: 24px;
+      padding: 1px;
+      border: 1px solid rgba(70, 76, 70, 0.12);
+      border-radius: 7px;
+      background: white;
+      cursor: pointer;
+    }
+
     .icon-button {
       display: grid;
       width: 30px;
@@ -1406,9 +1493,9 @@
       const CUSTOM_NODE_COLOURS_KEY = "flowline-custom-node-colours-v1";
 
       const defaultStages = [
-        { id: "idea", name: "First stage" },
-        { id: "initial", name: "Second stage" },
-        { id: "identity", name: "Third stage" }
+        { id: "idea", name: "First stage", color: null },
+        { id: "initial", name: "Second stage", color: null },
+        { id: "identity", name: "Third stage", color: null }
       ];
 
       const defaultTasks = [
@@ -1521,7 +1608,8 @@
       function createBlankState() {
         const stages = defaultStages.map(stage => ({
           id: makeId("stage"),
-          name: stage.name
+          name: stage.name,
+          color: null
         }));
 
         return {
@@ -1652,7 +1740,10 @@
           .filter(stage => stage && typeof stage.id === "string")
           .map(stage => ({
             id: stage.id,
-            name: String(stage.name || "Untitled stage").trim() || "Untitled stage"
+            name: String(stage.name || "Untitled stage").trim() || "Untitled stage",
+            color: /^#[0-9a-f]{6}$/i.test(String(stage.color || ""))
+              ? String(stage.color).toLowerCase()
+              : null
           }))
           .filter(stage => {
             if (seenStageIds.has(stage.id)) {
@@ -1663,7 +1754,7 @@
           });
 
         if (!stages.length) {
-          stages.push({ id: makeId("stage"), name: "My stage" });
+          stages.push({ id: makeId("stage"), name: "My stage", color: null });
         }
 
         const validIds = new Set(stages.map(stage => stage.id));
@@ -2035,6 +2126,16 @@
         renderBoard();
       }
 
+      const PRESET_STAGE_COLOURS = [
+        "#ff2bd6",
+        "#ff7a00",
+        "#eaff00",
+        "#39ff14",
+        "#00e5ff",
+        "#2979ff",
+        "#9b5cff"
+      ];
+
       const PRESET_NODE_COLOURS = [
         { name: "Neon pink", value: "#ff2bd6" },
         { name: "Electric orange", value: "#ff7a00" },
@@ -2264,6 +2365,11 @@
           section.dataset.stage = stage.id;
           section.style.paddingBottom = `${routingReserve + 32}px`;
 
+          if (stage.color) {
+            section.classList.add("has-stage-color");
+            section.style.setProperty("--stage-color", stage.color);
+          }
+
           const header = document.createElement("header");
           header.className = "stage-header";
 
@@ -2325,6 +2431,7 @@
       }
 
       function createTaskCard(task) {
+        const statusKey = getTaskStatus(task);
         const card = document.createElement("article");
         card.className = `task-card${task.done ? " done" : ""}`;
         card.dataset.taskId = task.id;
@@ -2399,9 +2506,21 @@
         title.title = task.title;
 
         const status = document.createElement("span");
-        status.className = `task-status ${task.done ? "done" : "wip"}`;
-        status.textContent = getTaskStatus(task);
-        status.title = task.done ? "All work complete" : "Work in progress";
+        status.className = `task-status ${statusKey}`;
+        status.textContent = getTaskStatusLabel(statusKey);
+
+        if (statusKey === "done") {
+          status.title = "All work complete";
+        } else if (statusKey === "blocked") {
+          const parentTask = task.parentId
+            ? getTaskById(task.parentId)
+            : null;
+          status.title = parentTask
+            ? `Blocked until “${parentTask.title}” is Done`
+            : "Blocked by an unfinished parent task";
+        } else {
+          status.title = "Work in progress";
+        }
 
         titleRow.append(title, status);
 
@@ -2572,7 +2691,31 @@
       }
 
       function getTaskStatus(task) {
-        return task.done ? "Done" : "WIP";
+        if (task.done) {
+          return "done";
+        }
+
+        const parentTask = task.parentId
+          ? getTaskById(task.parentId)
+          : null;
+
+        if (parentTask && !parentTask.done) {
+          return "blocked";
+        }
+
+        return "wip";
+      }
+
+      function getTaskStatusLabel(statusKey) {
+        if (statusKey === "done") {
+          return "Done";
+        }
+
+        if (statusKey === "blocked") {
+          return "Blocked";
+        }
+
+        return "WIP";
       }
 
       function getNextFollowUpTitle() {
@@ -2785,6 +2928,37 @@
         taskDialog.close();
       }
 
+      function makeStageColourSwatch(stage, colour = null) {
+        const button = document.createElement("button");
+        const isDefault = !colour;
+        const selected = isDefault
+          ? !stage.color
+          : stage.color === colour;
+
+        button.className =
+          `stage-colour-swatch${isDefault ? " default-stage-colour" : ""}` +
+          `${selected ? " selected" : ""}`;
+        button.type = "button";
+        button.title = isDefault ? "No stage colour" : `Use ${colour}`;
+        button.setAttribute(
+          "aria-label",
+          isDefault ? "Clear stage colour" : `Set stage colour to ${colour}`
+        );
+
+        if (colour) {
+          button.style.setProperty("--stage-swatch", colour);
+        }
+
+        button.addEventListener("click", () => {
+          stage.color = colour;
+          saveState();
+          renderBoard();
+          renderStageManager(stage.id);
+        });
+
+        return button;
+      }
+
       function renderStageManager(focusStageId = null) {
         stageManagerList.replaceChildren();
 
@@ -2831,7 +3005,46 @@
           remove.addEventListener("click", () => removeStage(stage.id));
 
           actions.append(left, right, remove);
-          row.append(position, input, actions);
+
+          const colourControls = document.createElement("div");
+          colourControls.className = "stage-colour-controls";
+
+          const colourCaption = document.createElement("span");
+          colourCaption.className = "stage-colour-caption";
+          colourCaption.textContent = "Stage colour";
+
+          colourControls.append(
+            colourCaption,
+            makeStageColourSwatch(stage, null)
+          );
+
+          PRESET_STAGE_COLOURS.forEach(colour => {
+            colourControls.appendChild(
+              makeStageColourSwatch(stage, colour)
+            );
+          });
+
+          const customColour = document.createElement("input");
+          customColour.className = "stage-custom-colour";
+          customColour.type = "color";
+          customColour.value = stage.color || "#00e5ff";
+          customColour.title = "Custom stage colour";
+          customColour.setAttribute(
+            "aria-label",
+            `Custom colour for ${stage.name}`
+          );
+          customColour.addEventListener("input", () => {
+            stage.color = String(customColour.value).toLowerCase();
+            saveState();
+            renderBoard();
+          });
+          customColour.addEventListener("change", () => {
+            renderStageManager(stage.id);
+          });
+
+          colourControls.appendChild(customColour);
+
+          row.append(position, input, actions, colourControls);
           stageManagerList.appendChild(row);
 
           if (stage.id === focusStageId) {
@@ -2867,7 +3080,8 @@
       function addStage() {
         const stage = {
           id: makeId("stage"),
-          name: "New stage"
+          name: "New stage",
+          color: null
         };
 
         state.stages.push(stage);
