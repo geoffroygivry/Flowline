@@ -4,12 +4,15 @@ on:
   push:
     paths:
       - '.github/workflows/flowline-v7-edge-colours.yml'
+  issues:
+    types: [opened]
 
 permissions:
   contents: write
 
 jobs:
   patch-flowline:
+    if: github.event_name == 'push' || github.event.issue.title == 'Flowline v7 edge colour deploy'
     runs-on: ubuntu-latest
     steps:
       - name: Check out repository
